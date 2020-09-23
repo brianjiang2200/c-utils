@@ -27,9 +27,7 @@ int get_png_data_IHDR(struct data_IHDR *out, FILE *fp, long offset, int whence) 
 
 	fseek(fp, 16, SEEK_SET);
 
-	fread(&out->width, sizeof(U32), 1, fp);
-
-	fread(&out->height, sizeof(U32), 1, fp);
+	fread(out, DATA_IHDR_SIZE, 1, fp);
 
 	return 0;
 }
