@@ -44,6 +44,13 @@ U32 get_png_height(struct data_IHDR *buf) {
 
 /*unit tests*/
 int main () {
+
+	FILE *fp = fopen("lab1/starter/images/WEEF_1.png", r);
+
+	data_IHDR *temp;
+	get_png_data_IHDR(temp, fp, 0, 0);
+	printf("WIDTH: %u\nHEIGHT: %u\n", &buf->width, &buf->height);
+
 	return 0;
 }
 
