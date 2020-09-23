@@ -46,7 +46,13 @@ U32 get_png_height(struct data_IHDR *buf) {
 }
 
 
-int get_chunk(struct chunk *chk, FILE *fp, char type[5]) {
+int get_chunk(struct chunk *chk, FILE *fp, int flag) {
+	/*extract a chunk from the file fp into chk
+	flag:
+		0 for IHDR
+		1 for IDAT
+		2 for IEND
+	*/
 
 	if(fp == NULL) {
 		return -1;
@@ -55,8 +61,8 @@ int get_chunk(struct chunk *chk, FILE *fp, char type[5]) {
 	int data = 0;
 	int data_size = 0;
 
-	switch(type[3]) {
-		case 'R':
+	switch(flag) {
+		case 0:
 			fseek(fp, 8, SEEK_SET);
 			fread(&chk->length, sizeof(U32), 1, fp);
                         chk->length = ntohl(chk->length);
@@ -77,7 +83,7 @@ int get_chunk(struct chunk *chk, FILE *fp, char type[5]) {
 
 			break;
 
-		case 'T':
+		case 1:
                         fseek(fp, 33, SEEK_SET);
 			fread(&chk->length, sizeof(U32), 1, fp);
 			chk->length = ntohl(chk->length);
@@ -102,7 +108,7 @@ int get_chunk(struct chunk *chk, FILE *fp, char type[5]) {
 
 			break;
 
-		case 'D':
+		case 2:
 			fseek(fp, -12, SEEK_END);
                         fread(&chk->length, sizeof(U32), 1, fp);
                         chk->length = ntohl(chk->length);
@@ -147,12 +153,12 @@ int main () {
 */
 
 	struct chunk *temp1 = malloc(sizeof(struct chunk));
-	get_chunk(temp1, fp, "IHDR");
+	get_chunk(temp1, fp, 0);
 
 	printf("%u\n%c%c%c%c\n%p\n%u\n", temp1->length, temp1->type[0], temp1->type[1], temp1->type[2],
 		temp1->type[3], temp1->p_data, temp1->crc);
 
-	printf("%d\n", *temp1->p_data);
+	printf("%p\n", temp1->p_data);
 
 	free(temp1);
 
