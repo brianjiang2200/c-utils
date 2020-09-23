@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "lab_png.h"
+#include <string.h>
+#include <arpa/inet.h>
 
 int is_png(U8 *buf, size_t n) {
 	printf("%d\n", *buf);
@@ -29,6 +31,9 @@ int get_png_data_IHDR(struct data_IHDR *out, FILE *fp, long offset, int whence) 
 
 	fread(out, DATA_IHDR_SIZE, 1, fp);
 
+	out->width = ntohl(out->width);
+	out->height = ntohl(out->height);
+
 	return 0;
 }
 
@@ -39,8 +44,7 @@ U32 get_png_width(struct data_IHDR *buf) {
 U32 get_png_height(struct data_IHDR *buf) {
 	return buf->height;
 }
-
-/*unit tests*/
+/*
 int main () {
 
 	FILE *fp = fopen("../images/red-green-16x16.png", "r");
@@ -59,4 +63,5 @@ int main () {
 
 	return 0;
 }
+*/
 
