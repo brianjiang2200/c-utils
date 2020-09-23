@@ -47,10 +47,11 @@ int main () {
 
 	FILE *fp = fopen("lab1/starter/images/WEEF_1.png", "r");
 
-	struct data_IHDR *temp;
-	get_png_data_IHDR(temp, fp, 0, 0);
-	printf("WIDTH: %u\nHEIGHT: %u\n", temp->width, temp->height);
+	data_IHDR_p *temp = malloc(sizeof(data_IHDR_p));
+	get_png_data_IHDR(*temp, fp, 0, 0);
+	printf("WIDTH: %u\nHEIGHT: %u\n", &temp->width, &temp->height);
 
+	free(temp);
 	fclose(fp);
 
 	return 0;
