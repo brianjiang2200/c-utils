@@ -135,14 +135,14 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 }
 
 
-int main () {
+/*int main () {
 
 	FILE *fp = fopen("../images/red-green-16x16.png", "r");
 
 	if(fp == NULL) {
 		return -1;
 	}
-/*
+
 	struct data_IHDR *temp = malloc(sizeof(struct data_IHDR));
 	get_png_data_IHDR(temp, fp, 0, 0);
 
@@ -150,7 +150,7 @@ int main () {
 		temp->compression, temp->filter, temp->interlace);
 
 	free(temp);
-*/
+
 
 	struct chunk *temp1 = malloc(sizeof(struct chunk));
 	get_chunk(temp1, fp, 0);
@@ -166,6 +166,6 @@ int main () {
 	fclose(fp);
 
 	return 0;
-}
+}*/
 
 
