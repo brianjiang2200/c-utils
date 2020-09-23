@@ -14,6 +14,7 @@ int is_png(U8 *buf, size_t n) {
 		*(buf + 7) != 0x0a) {
 			return -1;
 	}
+	/*test test test*/
 	return 0;
 }
 
