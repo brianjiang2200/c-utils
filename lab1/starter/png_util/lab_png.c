@@ -45,11 +45,16 @@ U32 get_png_height(struct data_IHDR *buf) {
 /*unit tests*/
 int main () {
 
-	FILE *fp = fopen("lab1/starter/images/WEEF_1.png", "r");
+	FILE *fp = fopen("../images/red-green-16x16.png", "r");
 
-	data_IHDR_p *temp = malloc(sizeof(data_IHDR_p));
-	get_png_data_IHDR(*temp, fp, 0, 0);
-	printf("WIDTH: %u\nHEIGHT: %u\n", &temp->width, &temp->height);
+	if(fp == NULL) {
+		return -1;
+	}
+
+	struct data_IHDR *temp = malloc(sizeof(struct data_IHDR));
+	get_png_data_IHDR(temp, fp, 0, 0);
+
+	printf("WIDTH: %u\nHEIGHT: %u\n", temp->width, temp->height);
 
 	free(temp);
 	fclose(fp);
