@@ -62,8 +62,8 @@ typedef struct simple_PNG {
  * FUNCTION PROTOTYPES 
  *****************************************************************************/
 int is_png(U8 *buf, size_t n);
-int get_png_height(struct data_IHDR *buf);
-int get_png_width(struct data_IHDR *buf);
+U32 get_png_height(struct data_IHDR *buf);
+U32 get_png_width(struct data_IHDR *buf);
 int get_png_data_IHDR(struct data_IHDR *out, FILE *fp, long offset, int whence);
 
 /* declare your own functions prototypes here */

@@ -23,6 +23,14 @@ int get_png_data_IHDR(struct data_IHDR *out, FILE *fp, long offset, int whence) 
 	return 0;
 }
 
+U32 get_png_height(struct data_IHDR *buf) {
+	return buf->height;
+}
+
+U32 get_png_width(struct data_IHDR *buf) {
+	return buf->width;
+}
+
 /*unit tests*/
 int main () {
 	return 0;
