@@ -155,7 +155,7 @@ int main () {
 	struct chunk *temp1 = malloc(sizeof(struct chunk));
 	get_chunk(temp1, fp, 0);
 
-	printf("%u\n%c%c%c%c\n%p\n%u\n", temp1->length, temp1->type[0], temp1->type[1], temp1->type[2],
+	printf("%u\n%c%c%c%c\n%p\n%08x\n", temp1->length, temp1->type[0], temp1->type[1], temp1->type[2],
 		temp1->type[3], temp1->p_data, temp1->crc);
 
 	printf("%p\n", temp1->p_data);
