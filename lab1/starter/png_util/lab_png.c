@@ -27,9 +27,9 @@ int get_png_data_IHDR(struct data_IHDR *out, FILE *fp, long offset, int whence) 
 
 	fseek(fp, 16, SEEK_SET);
 
-	fread(&buf->width, sizeof(U32), 1, fp);
+	fread(&out->width, sizeof(U32), 1, fp);
 
-	fread(&buf->height, sizeof(U32), 1, fp);
+	fread(&out->height, sizeof(U32), 1, fp);
 
 	return 0;
 }
@@ -45,11 +45,13 @@ U32 get_png_height(struct data_IHDR *buf) {
 /*unit tests*/
 int main () {
 
-	FILE *fp = fopen("lab1/starter/images/WEEF_1.png", r);
+	FILE *fp = fopen("lab1/starter/images/WEEF_1.png", "r");
 
-	data_IHDR *temp;
+	struct data_IHDR *temp;
 	get_png_data_IHDR(temp, fp, 0, 0);
-	printf("WIDTH: %u\nHEIGHT: %u\n", &buf->width, &buf->height);
+	printf("WIDTH: %u\nHEIGHT: %u\n", temp->width, temp->height);
+
+	fclose(fp);
 
 	return 0;
 }
