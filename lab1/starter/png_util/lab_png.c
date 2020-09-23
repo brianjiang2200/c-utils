@@ -29,3 +29,6 @@ int main () {
 	printf("%d", is_png(bad_buffer, 0));
 	return 0;
 }
+
+
+/*test*/
