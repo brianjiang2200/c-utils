@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
 
 	U8 PNG_sign[8];
 	fread(&PNG_sign, sizeof(PNG_sign), 1, fp);
-	fseek(fp, 0, SEEK_SET);
+	rewind(fp);
 
 	if(is_png(PNG_sign, 0) < 0) {
 		printf("%s: Not a PNG file\n", filename);

@@ -46,39 +46,86 @@ U32 get_png_height(struct data_IHDR *buf) {
 }
 
 
-int get_chunk(struct chunk *out, FILE *fp, U8 type[4]) {
+int get_chunk(struct chunk *chk, FILE *fp, char type[5]) {
 
 	if(fp == NULL) {
 		return -1;
 	}
 
-	long long int data = 0;
+	int data = 0;
+	int data_size = 0;
 
 	switch(type[3]) {
 		case 'R':
-			get_png_data_IHDR(out, fp, 0, 0);
+			fseek(fp, 8, SEEK_SET);
+			fread(&chk->length, sizeof(U32), 1, fp);
+                        chk->length = ntohl(chk->length);
+
+			fread(&chk->type[0], 1, 1, fp);
+			fread(&chk->type[1], 1, 1, fp);
+			fread(&chk->type[2], 1, 1, fp);
+			fread(&chk->type[3], 1, 1, fp);
+
+			fread(&data, 1, 1, fp);	/*ONLY POINTS TO FIRST BYTE OF DATA*/
+			chk->p_data = &data;	/*WORKS, BUT APPEARS AS WARNING*/
+
+			fseek(fp, 29, SEEK_SET);
+			fread(&chk->crc, sizeof(U32), 1, fp);
+			chk->crc = ntohl(chk->crc);
+
+			rewind(fp);
+
 			break;
+
 		case 'T':
                         fseek(fp, 33, SEEK_SET);
-			fread(out->length, sizeof(U32), 1, fp);
-			fread(out->type[0], 1, 1, fp);
-                        fread(out->type[1], 1, 1, fp);
-                        fread(out->type[2], 1, 1, fp);
-                        fread(out->type[3], 1, 1, fp);
+			fread(&chk->length, sizeof(U32), 1, fp);
+			chk->length = ntohl(chk->length);
+
+			fread(&chk->type[0], 1, 1, fp);
+                        fread(&chk->type[1], 1, 1, fp);
+                        fread(&chk->type[2], 1, 1, fp);
+                        fread(&chk->type[3], 1, 1, fp);
 
 			fseek(fp, -16, SEEK_END);
-			int data_size = ftell(fp) - 41;
-                        fread(out->crc, sizeof(U32), 1, fp);
+
+			data_size = ftell(fp) - 41;
+
+			fread(&chk->crc, sizeof(U32), 1, fp);
+			chk->crc = ntohl(chk->crc);
 
 			fseek(fp, 41, SEEK_SET);
-			fread(data, data_size, 1, fp);
-			out->p_data = &data;
+			fread(&data, 1, 1, fp);	/*ONLY POINTS TO FIRST BYTE OF DATA*/
+			chk->p_data = &data;	/*WORKS, BUT APPEARS AS WARNING*/
+
+			rewind(fp);
+
 			break;
+
 		case 'D':
-			
+			fseek(fp, -12, SEEK_END);
+                        fread(&chk->length, sizeof(U32), 1, fp);
+                        chk->length = ntohl(chk->length);
+
+                        fread(&chk->type[0], 1, 1, fp);
+                        fread(&chk->type[1], 1, 1, fp);
+                        fread(&chk->type[2], 1, 1, fp);
+                        fread(&chk->type[3], 1, 1, fp);
+
+                        fread(&chk->crc, sizeof(U32), 1, fp);
+                        chk->crc = ntohl(chk->crc);
+
+			chk->p_data = NULL;
+
+			rewind(fp);
+
 			break;
+
+		default:
+			return -1;
 	}
 
+	return 0;
 }
 
 
@@ -89,7 +136,7 @@ int main () {
 	if(fp == NULL) {
 		return -1;
 	}
-
+/*
 	struct data_IHDR *temp = malloc(sizeof(struct data_IHDR));
 	get_png_data_IHDR(temp, fp, 0, 0);
 
@@ -97,6 +144,19 @@ int main () {
 		temp->compression, temp->filter, temp->interlace);
 
 	free(temp);
+*/
+
+	struct chunk *temp1 = malloc(sizeof(struct chunk));
+	get_chunk(temp1, fp, "IHDR");
+
+	printf("%u\n%c%c%c%c\n%p\n%u\n", temp1->length, temp1->type[0], temp1->type[1], temp1->type[2],
+		temp1->type[3], temp1->p_data, temp1->crc);
+
+	printf("%d\n", *temp1->p_data);
+
+	free(temp1);
+
+
 	fclose(fp);
 
 	return 0;

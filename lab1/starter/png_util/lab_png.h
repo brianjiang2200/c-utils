@@ -67,4 +67,4 @@ U32 get_png_width(struct data_IHDR *buf);
 int get_png_data_IHDR(struct data_IHDR *out, FILE *fp, long offset, int whence);
 
 /* declare your own functions prototypes here */
-int get_chunk(struct chunk *out, FILE *fp, U8 type[4]);
+int get_chunk(struct chunk *out, FILE *fp, char type[5]);
