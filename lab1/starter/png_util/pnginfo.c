@@ -5,11 +5,26 @@
 #include "crc.h"
 
 unsigned long expected_CRC(struct chunk* buf) {
-	U8 crc_buf[30000];
+	U8 *crc_buf = malloc(buf->length + 4);
 	memcpy(crc_buf, &buf->type, 4);
-	memcpy(crc_buf, buf->p_data, buf->length);
-	return crc(crc_buf, 4 + buf->length);
+	memcpy(crc_buf + 4, buf->p_data, buf->length);
+/*
+	for(int i = 0; i < 17; i++) {
+		printf("%02x ", crc_buf[i]);
+	}
+*/
+	unsigned long result = crc(crc_buf, 4 + buf->length);
+
+	free(crc_buf);
+
+	return result;
 }
+/*
+unsigned long test_CRC() { /*WEEF_1.png
+	U8 crc_test[17] = {0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x01, 0xc2, 0x00, 0x00, 0x00, 0xe5, 0x08, 0x06, 0x00, 0x00, 0x00};
+	return crc(crc_test, 17);
+}
+*/
 
 /*To be compiled into pnginfo*/
 int main(int argc, char** argv) {
@@ -42,12 +57,14 @@ int main(int argc, char** argv) {
 	if (chunk_buf->crc != exp_crc) {
 		printf("IHDR chunk CRC error: computed %08lx, expected %08x\n", exp_crc, chunk_buf->crc);
 	}
+	free(chunk_buf->p_data);
 
 	get_chunk(chunk_buf, fp, 1);
 	exp_crc = expected_CRC(chunk_buf);
 	if (chunk_buf->crc != exp_crc) {
 		printf("IDAT chunk CRC error: computed %08lx, expected %08x\n", exp_crc, chunk_buf->crc);
 	}
+        free(chunk_buf->p_data);
 
 	get_chunk(chunk_buf, fp, 2);
 	exp_crc = expected_CRC(chunk_buf);

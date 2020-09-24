@@ -59,7 +59,7 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 	}
 
 //	U8 data[256];
-	U8 *p_data_temp = malloc(sizeof(U8));
+//	U8 *p_data_temp = malloc(sizeof(U8));
 
 	int data_size = 0;
 
@@ -79,9 +79,10 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
                         chk->p_data = p_data_temp;
 */
 
-			U8 data0[30000];
-			fread(data0, chk->length, 1, fp);
-			chk->p_data = data0;
+//			U8 data0[30000];
+
+			chk->p_data = malloc(chk->length);
+			fread(chk->p_data, chk->length, 1, fp);
 
 			fseek(fp, 29, SEEK_SET);
 			fread(&chk->crc, sizeof(U32), 1, fp);
@@ -103,7 +104,7 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 
 			fseek(fp, -16, SEEK_END);
 
-			data_size = ftell(fp) - 41;
+//			data_size = ftell(fp) - 41;
 
 			fread(&chk->crc, sizeof(U32), 1, fp);
 			chk->crc = ntohl(chk->crc);
@@ -113,11 +114,9 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 			fread(p_data_temp, chk->length, 1, fp);
 			chk->p_data = p_data_temp;
 */
-
-			fseek(fp, 41, SEEK_SET);
-                        U8 data1[30000];
-			fread(data1, chk->length, 1, fp);
-                        chk->p_data = data1;
+                        fseek(fp, 41, SEEK_SET);
+                        chk->p_data = malloc(chk->length);
+			fread(chk->p_data, chk->length, 1, fp);
 
 			rewind(fp);
 
@@ -145,8 +144,6 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 		default:
 			return -1;
 	}
-
-	free(p_data_temp);
 
 	return 0;
 }
