@@ -58,9 +58,6 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 		return -1;
 	}
 
-//	U8 data[256];
-//	U8 *p_data_temp = malloc(sizeof(U8));
-
 	int data_size = 0;
 
 	switch(flag) {
@@ -73,13 +70,6 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 			fread(&chk->type[1], 1, 1, fp);
 			fread(&chk->type[2], 1, 1, fp);
 			fread(&chk->type[3], 1, 1, fp);
-/*implementation 2
-			/*READ DATA FIELD, POINTED TO BY CHK->P_DATA
-			fread(p_data_temp, chk->length, 1, fp);
-                        chk->p_data = p_data_temp;
-*/
-
-//			U8 data0[30000];
 
 			chk->p_data = malloc(chk->length);
 			fread(chk->p_data, chk->length, 1, fp);
@@ -104,16 +94,9 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 
 			fseek(fp, -16, SEEK_END);
 
-//			data_size = ftell(fp) - 41;
-
 			fread(&chk->crc, sizeof(U32), 1, fp);
 			chk->crc = ntohl(chk->crc);
-/*
-                        /*READ DATA FIELD, POINTED TO BY CHK->P_DATA
-			fseek(fp, 41, SEEK_SET);
-			fread(p_data_temp, chk->length, 1, fp);
-			chk->p_data = p_data_temp;
-*/
+
                         fseek(fp, 41, SEEK_SET);
                         chk->p_data = malloc(chk->length);
 			fread(chk->p_data, chk->length, 1, fp);

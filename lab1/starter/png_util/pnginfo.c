@@ -8,30 +8,27 @@ unsigned long expected_CRC(struct chunk* buf) {
 	U8 *crc_buf = malloc(buf->length + 4);
 	memcpy(crc_buf, &buf->type, 4);
 	memcpy(crc_buf + 4, buf->p_data, buf->length);
-/*
-	for(int i = 0; i < 17; i++) {
-		printf("%02x ", crc_buf[i]);
-	}
-*/
+
 	unsigned long result = crc(crc_buf, 4 + buf->length);
 
 	free(crc_buf);
 
 	return result;
 }
-/*
-unsigned long test_CRC() { /*WEEF_1.png
-	U8 crc_test[17] = {0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x01, 0xc2, 0x00, 0x00, 0x00, 0xe5, 0x08, 0x06, 0x00, 0x00, 0x00};
-	return crc(crc_test, 17);
-}
-*/
 
 /*To be compiled into pnginfo*/
 int main(int argc, char** argv) {
 	char* filename = argv[1];
 	struct data_IHDR* buf = malloc(sizeof(struct data_IHDR));
+
+        /*check for crc corruption*/
+        struct chunk *chunk_buf = malloc(sizeof(struct chunk));
+
 	FILE *fp = fopen (filename, "r");
 	if (fp == NULL) {
+		free(buf);
+		free(chunk_buf);
+		fclose(fp);
 		return -1;
 	}
 
@@ -42,15 +39,15 @@ int main(int argc, char** argv) {
 
 	if(is_png(PNG_sign, 0) < 0) {
 		printf("%s: Not a PNG file\n", filename);
+		free(buf);
+		free(chunk_buf);
+		fclose(fp);
 		return -1;
 	}
 
 	/*if PNG, get dimensions*/
 	get_png_data_IHDR(buf, fp, 0, 0);
 	printf("%s: %u x %u\n", filename, buf->width, buf->height);
-
-	/*check for crc corruption*/
-	struct chunk *chunk_buf = malloc(sizeof(struct chunk));
 
 	get_chunk(chunk_buf, fp, 0);
 	unsigned long exp_crc = expected_CRC(chunk_buf);
