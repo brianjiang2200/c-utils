@@ -1,32 +1,14 @@
-# Makefile, ECE252  
-# Yiqing Huang
+pnginfo: lab_png.h crc.h lab_png.c crc.c pnginfo.c
+	gcc -std=c99 lab_png.c crc.c pnginfo.c -o pnginfo
 
-CC = gcc       # compiler
-CFLAGS = -Wall -g -std=c99 # compilation flags
-LD = gcc       # linker
-LDFLAGS = -g   # debugging symbols in build
-LDLIBS = -lz   # link with libz
+findpng: lab_png.h crc.h lab_png.c crc.c findpng.c
+	gcc -std=c99 lab_png.c crc.c findpng.c -o findpng
 
-# For students 
-LIB_UTIL = zutil.o crc.o
-SRCS   = main.c crc.c zutil.c
-OBJS   = main.o $(LIB_UTIL) 
+catpng: lab_png.h crc.h zutil.h lab_png.c crc.c zutil.c catpng.c
+	gcc -std=c99 lab_png.c crc.c zutil.c catpng.c -o catpng -lz
 
-TARGETS= main.out 
+run: catpng
+	./catpng ../images/red-green-16x16.png
 
-all: ${TARGETS}
-
-main.out: $(OBJS) 
-	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
-
-%.o: %.c 
-	$(CC) $(CFLAGS) -c $< 
-
-%.d: %.c
-	gcc -MM -MF $@ $<
-
--include $(SRCS:.c=.d)
-
-.PHONY: clean
 clean:
-	rm -f *.d *.o $(TARGETS) 
+	rm -f catpng

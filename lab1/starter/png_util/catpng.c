@@ -3,7 +3,7 @@
 #include <string.h>
 #include "lab_png.h"
 #include "crc.h"
-//#include "zutil.h"
+#include "zutil.h"
 
 int main(int argc, char** argv) {
 	if (argc == 1) {
