@@ -31,7 +31,6 @@ int main(int argc, char** argv) {
 	}
 
 	/*if PNG, get dimensions*/
-
 	get_png_data_IHDR(buf, fp, 0, 0);
 	printf("%s: %u x %u\n", filename, buf->width, buf->height);
 

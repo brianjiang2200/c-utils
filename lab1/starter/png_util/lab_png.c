@@ -58,7 +58,7 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 		return -1;
 	}
 
-	U8 data[256];
+//	U8 data[256];
 	int data_size = 0;
 
 	switch(flag) {
@@ -72,8 +72,10 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 			fread(&chk->type[2], 1, 1, fp);
 			fread(&chk->type[3], 1, 1, fp);
 
-			fread(data, chk->length, 1, fp);	/*ONLY POINTS TO FIRST BYTE OF DATA*/
-			chk->p_data = data;	/*WORKS, BUT APPEARS AS WARNING*/
+			U8 data0[256];
+
+			fread(data0, chk->length, 1, fp);	/*ONLY POINTS TO FIRST BYTE OF DATA*/
+			chk->p_data = data0;	/*WORKS, BUT APPEARS AS WARNING*/
 
 			fseek(fp, 29, SEEK_SET);
 			fread(&chk->crc, sizeof(U32), 1, fp);
@@ -97,12 +99,14 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 
 			data_size = ftell(fp) - 41;
 
+			U8 data1[data_size];
+
 			fread(&chk->crc, sizeof(U32), 1, fp);
 			chk->crc = ntohl(chk->crc);
 
 			fseek(fp, 41, SEEK_SET);
-			fread(data, chk->length, 1, fp);	/*ONLY POINTS TO FIRST BYTE OF DATA*/
-			chk->p_data = data;	/*WORKS, BUT APPEARS AS WARNING*/
+			fread(data1, chk->length, 1, fp);	/*ONLY POINTS TO FIRST BYTE OF DATA*/
+			chk->p_data = data1;	/*WORKS, BUT APPEARS AS WARNING*/
 
 			rewind(fp);
 
