@@ -5,7 +5,7 @@
 #include "crc.h"
 
 unsigned long expected_CRC(struct chunk* buf) {
-	U8 crc_buf[256];
+	U8 crc_buf[30000];
 	memcpy(crc_buf, &buf->type, 4);
 	memcpy(crc_buf, buf->p_data, buf->length);
 	return crc(crc_buf, 4 + buf->length);
