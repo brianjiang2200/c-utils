@@ -120,7 +120,17 @@ int main(int argc, char** argv) {
 
 	FILE* merged = fopen("all.png", "w");
 	fwrite(header, 1, 8, merged);
-	write_chunk(new_IHDR, merged);
+
+	U32 net_length = htonl(new_IHDR->length);
+	fwrite(&net_length, 4, 1, merged);
+	fwrite(&new_IHDR->type[0], 1, 1, merged);
+	fwrite(&new_IHDR->type[1], 1, 1, merged);
+	fwrite(&new_IHDR->type[2], 1, 1, merged);
+	fwrite(&new_IHDR->type[3], 1, 1, merged);
+	fwrite(&new_IHDR_data, 13, 1, merged);
+	U32 net_crc = htonl(new_IHDR->crc);
+	fwrite(&net_crc, 4, 1, merged);
+
 	write_chunk(new_IDAT, merged);
 	write_chunk(new_IEND, merged);
 	/*printf("Total IDAT Length: %u\n", new_IDAT->length);*/
