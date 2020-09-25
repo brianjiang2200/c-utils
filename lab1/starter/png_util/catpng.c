@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 	/*init IHDR and IHDR_data (independent)*/
 	struct chunk* new_IHDR = malloc(sizeof(struct chunk));
 	get_chunk(new_IHDR, sample, 0);
-	free(new_IHDR->p_data); /*We will not use this*/
+//	free(new_IHDR->p_data); /*We will not use this*/
 	struct data_IHDR* new_IHDR_data = malloc(sizeof(struct data_IHDR));
 	get_png_data_IHDR(new_IHDR_data, sample, 0, 0);
 	/*init IDAT*/
@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
 
 	FILE* merged = fopen("all.png", "w");
 	fwrite(header, 1, 8, merged);
-
+/*
 	U32 net_length = htonl(new_IHDR->length);
 	fwrite(&net_length, 4, 1, merged);
 	fwrite(&new_IHDR->type[0], 1, 1, merged);
@@ -130,13 +130,16 @@ int main(int argc, char** argv) {
 	fwrite(&new_IHDR_data, 13, 1, merged);
 	U32 net_crc = htonl(new_IHDR->crc);
 	fwrite(&net_crc, 4, 1, merged);
+*/
 
+	write_chunk(new_IHDR, merged);
 	write_chunk(new_IDAT, merged);
 	write_chunk(new_IEND, merged);
 	/*printf("Total IDAT Length: %u\n", new_IDAT->length);*/
 
 	free(inflated_data);
 	free(new_IHDR_data);
+	free(new_IHDR->p_data);
 	free(new_IHDR);
 	/*free all IDAT data*/
 	for (int i = 0; i < argc - 1; ++i) {
