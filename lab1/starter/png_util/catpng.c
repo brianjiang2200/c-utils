@@ -6,6 +6,18 @@
 #include "crc.h"
 #include "zutil.h"
 
+unsigned long expected_CRC(struct chunk* buf) {
+	U8* crc_buf = malloc(buf->length + 4);
+	memcpy(crc_buf, &buf->type, 4);
+	memcpy(crc_buf + 4, buf->p_data, buf->length);
+
+	unsigned long result = crc(crc_buf, 4 + buf->length);
+
+	free(crc_buf);
+
+	return result;
+}
+
 int main(int argc, char** argv) {
 	if (argc == 1) {
 		return -1;
@@ -59,14 +71,14 @@ int main(int argc, char** argv) {
 		fclose(png_inst);
 	}
 
-	/*compute total IDAT Length*/
+	/*compute expected approximate IDAT Length*/
 	for (int i = 1; i < argc - 1; ++i) {
 		new_IDAT->length += IDAT_arr[i]->length;
 	}
 
 	/*Concatenate IDAT data*/
 	U8* inflated_data = malloc(2 * new_IDAT->length);
-	int buffer_index = 0;
+	U64 buffer_index = 0;
 	for (int i = 0; i < argc - 1; ++i) {
 		U64 len_inf = 0;
 		int ret = mem_inf(inflated_data + buffer_index, &len_inf, IDAT_arr[i]->p_data, IDAT_arr[i]->length);
@@ -76,13 +88,22 @@ int main(int argc, char** argv) {
 		}
 		buffer_index += len_inf;
 	}
+	free(new_IDAT->p_data);
+	new_IDAT->p_data = malloc(2 * new_IDAT->length);
+	U64 len_def = 0;
+	int ret = mem_def(new_IDAT->p_data, &len_def, inflated_data, buffer_index, Z_DEFAULT_COMPRESSION);
+	if (!ret) {
+		/*clean up*/
+		return ret;
+	}
+	new_IDAT->length = len_def;
 
+	/*Compute new CRC Values here*/
+	
 
 	FILE* merged = fopen("all.png", "w");
 	fwrite(header, 1, 8, merged);
 	/*printf("Total IDAT Length: %u\n", new_IDAT->length);*/
-
-	/*Compute new CRC Values here*/
 
 	free(inflated_data);
 	free(new_IHDR_data);
