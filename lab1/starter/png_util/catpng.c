@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <arpa/inet.h>
 #include "lab_png.h"
 #include "crc.h"
 #include "zutil.h"
@@ -15,21 +16,85 @@ int main(int argc, char** argv) {
 	if (sample == NULL) {
 		return -1;
 	}
+
+	/*Init array of IDAT chunks*/
+	struct chunk** IDAT_arr = malloc((argc-1) * sizeof(struct chunk*));
+
 	/*read header*/
 	U8 header[8];
 	fread(header, 8, 1, sample);
-	/*read IHDR data*/
+	/*init IHDR and IHDR_data (independent)*/
 	struct chunk* new_IHDR = malloc(sizeof(struct chunk));
 	get_chunk(new_IHDR, sample, 0);
+	free(new_IHDR->p_data); /*We will not use this*/
+	struct data_IHDR* new_IHDR_data = malloc(sizeof(struct data_IHDR));
+	get_png_data_IHDR(new_IHDR_data, sample, 0, 0);
+	/*init IDAT*/
+	struct chunk* new_IDAT = malloc(sizeof(struct chunk));
+	get_chunk(new_IDAT, sample, 1);
+	IDAT_arr[0] = new_IDAT;
 	/*read IEND data*/
 	struct chunk* new_IEND = malloc(sizeof(struct chunk));
 	get_chunk(new_IEND, sample, 2);
 
+	/*cycle from image 2 to N*/
+	for (int i = 2; i < argc; ++i) {
+		FILE* png_inst = fopen(argv[i], "r");
+		if (png_inst == NULL) {
+			/*add freeing operations here*/
+			return -1;
+		}
+
+		/*read image height*/
+		fseek(png_inst, 20, SEEK_SET);
+		U32 inst_height;
+		fread(&inst_height, 4, 1, png_inst);
+		new_IHDR_data->height += ntohl(inst_height);
+
+		/*read IDAT data*/
+		struct chunk* IDAT_inst = malloc(sizeof(struct chunk));
+		get_chunk(IDAT_inst, png_inst, 1);
+		IDAT_arr[i - 1] = IDAT_inst;
+
+		fclose(png_inst);
+	}
+
+	/*compute total IDAT Length*/
+	for (int i = 1; i < argc - 1; ++i) {
+		new_IDAT->length += IDAT_arr[i]->length;
+	}
+
+	/*Concatenate IDAT data*/
+	U8* inflated_data = malloc(2 * new_IDAT->length);
+	int buffer_index = 0;
+	for (int i = 0; i < argc - 1; ++i) {
+		U64 len_inf = 0;
+		int ret = mem_inf(inflated_data + buffer_index, &len_inf, IDAT_arr[i]->p_data, IDAT_arr[i]->length);
+		if (!ret) {	/*failure*/
+			/*clean up*/
+			return ret;
+		}
+		buffer_index += len_inf;
+	}
+
+
 	FILE* merged = fopen("all.png", "w");
 	fwrite(header, 1, 8, merged);
+	/*printf("Total IDAT Length: %u\n", new_IDAT->length);*/
 
+	/*Compute new CRC Values here*/
+
+	free(inflated_data);
+	free(new_IHDR_data);
 	free(new_IHDR);
+	/*free all IDAT data*/
+	for (int i = 0; i < argc - 1; ++i) {
+		free(IDAT_arr[i]->p_data);
+		free(IDAT_arr[i]);
+	}
+	free(IDAT_arr);
 	free(new_IEND);
+	fclose(sample);
 	fclose(merged);
 	return 0;
 }

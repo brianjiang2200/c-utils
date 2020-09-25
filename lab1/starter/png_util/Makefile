@@ -8,7 +8,7 @@ catpng: lab_png.h crc.h zutil.h lab_png.c crc.c zutil.c catpng.c
 	gcc -std=c99 lab_png.c crc.c zutil.c catpng.c -o catpng -lz
 
 run: catpng
-	./catpng ../images/red-green-16x16.png
+	./catpng ../images/uweng_cropped/uweng_cropped_0.png ../images/uweng_cropped/uweng_cropped_1.png ../images/uweng_cropped/uweng_cropped_2.png
 
 clean:
 	rm -f catpng
