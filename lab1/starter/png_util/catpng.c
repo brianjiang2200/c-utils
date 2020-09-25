@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
 	}
 
 	/*Concatenate IDAT data*/
-	U8* inflated_data = malloc(20 * new_IDAT->length);
+	U8* inflated_data = malloc(30* new_IDAT->length);
 	U64 buffer_index = 0;
 	for (int i = 0; i < argc - 1; ++i) {
 		U64 len_inf = 0;
