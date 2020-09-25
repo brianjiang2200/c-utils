@@ -18,6 +18,21 @@ unsigned long expected_CRC(struct chunk* buf) {
 	return result;
 }
 
+void write_chunk(struct chunk* buf, FILE* fp) {
+	if (fp == NULL) {
+		return;
+	}
+	U32 net_length = htonl(buf->length);
+	fwrite(&net_length, 4, 1, fp);
+	fwrite(&buf->type[0], 1, 1, fp);
+	fwrite(&buf->type[1], 1, 1, fp);
+	fwrite(&buf->type[2], 1, 1, fp);
+	fwrite(&buf->type[3], 1, 1, fp);
+	fwrite(buf->p_data, buf->length, 1, fp);
+	U32 net_crc = htonl(buf->crc);
+	fwrite(&net_crc, 4, 1, fp);
+}
+
 int main(int argc, char** argv) {
 	if (argc == 1) {
 		return -1;
@@ -99,10 +114,14 @@ int main(int argc, char** argv) {
 	new_IDAT->length = len_def;
 
 	/*Compute new CRC Values here*/
-	
+	new_IHDR->crc = expected_CRC(new_IHDR);
+	new_IDAT->crc = expected_CRC(new_IDAT);
 
 	FILE* merged = fopen("all.png", "w");
 	fwrite(header, 1, 8, merged);
+	write_chunk(new_IHDR, merged);
+	write_chunk(new_IDAT, merged);
+	write_chunk(new_IEND, merged);
 	/*printf("Total IDAT Length: %u\n", new_IDAT->length);*/
 
 	free(inflated_data);
