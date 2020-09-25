@@ -12,4 +12,4 @@ run: catpng
 	valgrind ./catpng ../images/uweng_cropped/uweng_cropped_0.png ../images/uweng_cropped/uweng_cropped_1.png ../images/uweng_cropped/uweng_cropped_2.png ../images/uweng_cropped/uweng_cropped_3.png ../images/uweng_cropped/uweng_cropped_4.png ../images/uweng_cropped/uweng_cropped_5.png ../images/uweng_cropped/uweng_cropped_6.png
 
 clean:
-	rm -f catpng
+	rm -f catpng pnginfo findpng

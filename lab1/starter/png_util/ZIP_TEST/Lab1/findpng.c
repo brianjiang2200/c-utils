@@ -27,7 +27,7 @@ void check_directory(char* d_name, int *png_count) {
                                 /*check directories are not "." and ".."*/
                                 if (strcmp(str_path, ".") != 0 && strcmp(str_path, "..") != 0) {
                                 	/*recursively check subfolders*/
-					char dir_name[64];
+					char dir_name[256];
 					sprintf(dir_name, "%s/%s", d_name, str_path);
 					check_directory(dir_name, png_count);
 				}
@@ -35,14 +35,14 @@ void check_directory(char* d_name, int *png_count) {
                         /*else if potential png candidate found*/
                         if (p_dirent->d_type == 8) {
                                 /*check first if valid png*/
-				char file_name[64];
+				char file_name[256];
 				sprintf(file_name, "%s/%s", d_name, str_path);
 				FILE* fp = fopen(file_name, "r");
 				U8 buffer[8]; 
 				fread(buffer, 8, 1, fp);
 				if (is_png(buffer, 0)) {
 					fclose(fp);
-					break;
+					continue;
 				}  
                                 printf("%s/%s\n", d_name, str_path);
                                 png_count++;
