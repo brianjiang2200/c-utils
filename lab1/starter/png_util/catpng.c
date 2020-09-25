@@ -86,6 +86,10 @@ int main(int argc, char** argv) {
 		fclose(png_inst);
 	}
 
+	/*Here, we save the final height value calculated and put it into the appropiate location in IHDR data*/
+	U32 final_height = htonl(new_IHDR_data->height);
+	memcpy(new_IHDR->p_data + 4, &final_height, 4);
+
 	/*compute expected approximate IDAT Length*/
 	for (int i = 1; i < argc - 1; ++i) {
 		new_IDAT->length += IDAT_arr[i]->length;
