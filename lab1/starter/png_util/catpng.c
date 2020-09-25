@@ -96,8 +96,9 @@ int main(int argc, char** argv) {
 	U64 buffer_index = 0;
 	for (int i = 0; i < argc - 1; ++i) {
 		U64 len_inf = 0;
-		int ret = mem_inf(inflated_data + buffer_index, &len_inf, IDAT_arr[i]->p_data, IDAT_arr[i]->length);
-		if (!ret) {	/*failure*/
+		U64 src_length = IDAT_arr[i]->length;
+		int ret = mem_inf(inflated_data + buffer_index, &len_inf, IDAT_arr[i]->p_data, src_length);
+		if (ret) {	/*failure*/
 			/*clean up*/
 			return ret;
 		}
@@ -107,7 +108,7 @@ int main(int argc, char** argv) {
 	new_IDAT->p_data = malloc(2 * new_IDAT->length);
 	U64 len_def = 0;
 	int ret = mem_def(new_IDAT->p_data, &len_def, inflated_data, buffer_index, Z_DEFAULT_COMPRESSION);
-	if (!ret) {
+	if (ret) {
 		/*clean up*/
 		return ret;
 	}
