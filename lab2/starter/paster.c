@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <curl/curl.h>
 #include <getopt.h>
+#include "catpng.h"
 
 int main(int argc, char** argv) {
 	int c;

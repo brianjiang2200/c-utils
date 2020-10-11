@@ -33,19 +33,19 @@ void write_chunk(struct chunk* buf, FILE* fp) {
 	fwrite(&net_crc, 4, 1, fp);
 }
 
-int main(int argc, char** argv) {
-	if (argc == 1) {
+int catpng(int num_args, char** args) {
+	if (num_args == 1) {
 		return -1;
 	}
 	/*assumed all arguments are valid pngs*/
 
-	FILE* sample = fopen(argv[1], "r");
+	FILE* sample = fopen(args[1], "r");
 	if (sample == NULL) {
 		return -1;
 	}
 
 	/*Init array of IDAT chunks*/
-	struct chunk** IDAT_arr = malloc((argc-1) * sizeof(struct chunk*));
+	struct chunk** IDAT_arr = malloc((num_args-1) * sizeof(struct chunk*));
 
 	/*read header*/
 	U8 header[8];
@@ -64,8 +64,8 @@ int main(int argc, char** argv) {
 	get_chunk(new_IEND, sample, 2);
 
 	/*cycle from image 2 to N*/
-	for (int i = 2; i < argc; ++i) {
-		FILE* png_inst = fopen(argv[i], "r");
+	for (int i = 2; i < num_args; ++i) {
+		FILE* png_inst = fopen(args[i], "r");
 		if (png_inst == NULL) {
 			/*add freeing operations here*/
 			return -1;
@@ -90,14 +90,14 @@ int main(int argc, char** argv) {
 	memcpy(new_IHDR->p_data + 4, &final_height, 4);
 
 	/*compute expected approximate IDAT Length*/
-	for (int i = 1; i < argc - 1; ++i) {
+	for (int i = 1; i < num_args - 1; ++i) {
 		new_IDAT->length += IDAT_arr[i]->length;
 	}
 
 	/*Concatenate IDAT data*/
 	U8* inflated_data = malloc(30* new_IDAT->length);
 	U64 buffer_index = 0;
-	for (int i = 0; i < argc - 1; ++i) {
+	for (int i = 0; i < num_args - 1; ++i) {
 		U64 len_inf = 0;
 		U64 src_length = IDAT_arr[i]->length;
 		int ret = mem_inf(inflated_data + buffer_index, &len_inf, IDAT_arr[i]->p_data, src_length);
@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
 	free(new_IHDR->p_data);
 	free(new_IHDR);
 	/*free all IDAT data*/
-	for (int i = 0; i < argc - 1; ++i) {
+	for (int i = 0; i < num_args - 1; ++i) {
 		free(IDAT_arr[i]->p_data);
 		free(IDAT_arr[i]);
 	}
