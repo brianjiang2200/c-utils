@@ -10,6 +10,8 @@ int main(int argc, char** argv) {
 	int c;
 	int no_threads = 1;
 	int img_no = 1;
+
+	/*check arguments*/
 	while ((c = getopt(argc, argv, "t:n:")) != -1) {
 		switch(c) {
 		case 't':
@@ -22,6 +24,9 @@ int main(int argc, char** argv) {
 			break;
 		}
 	}
-	printf("%d %d\n", no_threads, img_no);
+
+	FILE* merged = fopen("all.png", "w");
+	fclose(merged);
+
 	return 0;
 }
