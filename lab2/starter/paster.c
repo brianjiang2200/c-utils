@@ -42,6 +42,7 @@ int main(int argc, char** argv) {
 	}
 
 	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+
 	res = curl_easy_perform(curl_handle);
 	if (res != CURLE_OK) {
 		printf("curl_easy_perform() failed");
