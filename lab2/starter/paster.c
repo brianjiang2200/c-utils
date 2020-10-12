@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <curl/curl.h>
 #include <getopt.h>
@@ -36,14 +37,16 @@ int main(int argc, char** argv) {
 
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 	curl_handle = curl_easy_init();
-	if (curl_handle) {
-		curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-		res = curl_easy_perform(curl_handle);
-		if (res != CURLE_OK) {
-			printf("curl_easy_perform() failed");
-		}
-		curl_easy_cleanup(curl_handle);
+	if (curl_handle == NULL) {
+		return -1;
 	}
+
+	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+	res = curl_easy_perform(curl_handle);
+	if (res != CURLE_OK) {
+		printf("curl_easy_perform() failed");
+	}
+	curl_easy_cleanup(curl_handle);
 
 	curl_global_cleanup();
 
