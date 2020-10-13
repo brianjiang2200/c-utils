@@ -75,11 +75,8 @@ int main(int argc, char** argv) {
 			sprintf(fname, "./output_%d.png", recv_buf.seq);
 			write_file(fname, recv_buf.buf, recv_buf.size);
 			retrieved[recv_buf.seq] = 1;
-			/*clean buf and re-init*/
-			/*recv_buf_cleanup(&recv_buf);
-			recv_buf_init(&recv_buf, BUF_SIZE);*/
+			num_retrieved++;
 		}
-		num_retrieved++;
 	}
 
 	curl_easy_cleanup(curl_handle);
