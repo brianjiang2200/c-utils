@@ -14,6 +14,16 @@
 #define BUF_SIZE 1048576
 #define BUF_INC 524288
 
+/*Thread arguments*/
+struct thread_args 
+{
+	
+}
+
+/*function passed to pthread to grab a segment*/
+void *get_segment(void *arg) {
+}
+
 int main(int argc, char** argv) {
 	int c;
 	int no_threads = 1;
@@ -64,6 +74,8 @@ int main(int argc, char** argv) {
 	int retrieved[50];
 	memset(retrieved, 0, 50*sizeof(int));
 	int num_retrieved = 0;
+	/*setup threads*/
+	p_thread_t *p_tids = malloc(sizeof(pthread_t) * no_threads);
 
 	while (num_retrieved < 50) {
 		res = curl_easy_perform(curl_handle);
@@ -79,6 +91,8 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	free(p_tids);
+
 	curl_easy_cleanup(curl_handle);
 
 	curl_global_cleanup();
@@ -91,4 +105,10 @@ int main(int argc, char** argv) {
 	Retrieve all segments using cURL
 	Output them to files
 	Concatenate them using catpng method
+*/
+
+/*Threads Behaviour:
+	Parameters: retrieved, curl_handle, recv_buf, num_retrieved
+	no return value
+	while num_retrieved < 50 grab more stuff
 */
