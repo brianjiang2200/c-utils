@@ -75,6 +75,9 @@ int main(int argc, char** argv) {
 			write_file(fname, recv_buf.buf, recv_buf.size);
 			retrieved[recv_buf.seq] = 1;
 			num_retrieved++;
+			/*clean buf and re-init*/
+			/*recv_buf_cleanup(&recv_buf);
+			recv_buf_init(&recv_buf, BUF_SIZE);*/
 		}
 	}
 
