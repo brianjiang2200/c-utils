@@ -58,18 +58,36 @@ int main(int argc, char** argv) {
 	curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void*)&recv_buf);
 
 	/*some servers may require a user-agent field*/
-	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0"); 
+	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
-	res = curl_easy_perform(curl_handle);
-	if (res != CURLE_OK) {
-		printf("curl_easy_perform() failed");
+	/*map of retreived images*/
+	int retrieved[50];
+	int num_retrieved = 0;
+
+	while (num_retrieved < 50) {
+		res = curl_easy_perform(curl_handle);
+		if (res != CURLE_OK) {
+			return -2;
+		}
+		if (!retrieved[recv_buf.seq]) {
+			char fname[256];
+			sprintf(fname, "./output_%d.png", recv_buf.seq);
+			write_file(fname, recv_buf.buf, recv_buf.size);
+			retrieved[recv_buf.seq] = 1;
+			num_retrieved++;
+		}
 	}
-
-	write_file("all.png", recv_buf.buf, recv_buf.size);
 
 	curl_easy_cleanup(curl_handle);
 
 	curl_global_cleanup();
+	recv_buf_cleanup(&recv_buf);
 
 	return 0;
 }
+
+/*ALGORITHM:
+	Retrieve all segments using cURL
+	Output them to files
+	Concatenate them using catpng method
+*/
