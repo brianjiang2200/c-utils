@@ -62,6 +62,7 @@ int main(int argc, char** argv) {
 
 	/*map of retreived images*/
 	int retrieved[50];
+	memset(retrieved, 0, 50*sizeof(int));
 	int num_retrieved = 0;
 
 	while (num_retrieved < 50) {
@@ -74,11 +75,11 @@ int main(int argc, char** argv) {
 			sprintf(fname, "./output_%d.png", recv_buf.seq);
 			write_file(fname, recv_buf.buf, recv_buf.size);
 			retrieved[recv_buf.seq] = 1;
-			num_retrieved++;
 			/*clean buf and re-init*/
 			/*recv_buf_cleanup(&recv_buf);
 			recv_buf_init(&recv_buf, BUF_SIZE);*/
 		}
+		num_retrieved++;
 	}
 
 	curl_easy_cleanup(curl_handle);
