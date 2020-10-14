@@ -15,13 +15,25 @@
 #define BUF_INC 524288
 
 /*Thread arguments*/
-struct thread_args 
+struct thread_args
 {
-	
+	int retrieved[50];
+	int* num_retrieved;
+	char* url;
 }
 
 /*function passed to pthread to grab a segment*/
 void *get_segment(void *arg) {
+	/*setup CURL*/
+	CURL *curl_handle;
+	CURLcode res;
+	RECV_BUF recv_buf;
+	recv_buf_init(&recv_buf, BUF_SIZE);
+
+	curl_handle = curl_easy_init(0;
+	if (curl_handle == NULL) {
+		return -1;
+	}
 }
 
 int main(int argc, char** argv) {
@@ -43,21 +55,19 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	/*setup CURL*/
-	CURL *curl_handle;
-	CURLcode res;
+	/*map of retrieved images*/
+	int retrieved[50];
+	memset(retrieved, 0, 50*sizeof(int));
+	int num_retrieved = 0;
+	/*setup threads*/
+	pthread_t *p_tids = malloc(sizeof(pthread_t) * no_threads);
 	char url[256];
 	sprintf(url, "%s%d", IMG_URL, img_no);
-	RECV_BUF recv_buf;
-	recv_buf_init(&recv_buf, BUF_SIZE);
 
 	curl_global_init(CURL_GLOBAL_DEFAULT);
-	curl_handle = curl_easy_init();
-	if (curl_handle == NULL) {
-		return -1;
-	}
 
-	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+
+	/*curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 	/*callback function to process received data*/
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_cb_curl3);
 	/*set recv buffer*/
@@ -69,13 +79,6 @@ int main(int argc, char** argv) {
 
 	/*some servers may require a user-agent field*/
 	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
-
-	/*map of retreived images*/
-	int retrieved[50];
-	memset(retrieved, 0, 50*sizeof(int));
-	int num_retrieved = 0;
-	/*setup threads*/
-	p_thread_t *p_tids = malloc(sizeof(pthread_t) * no_threads);
 
 	while (num_retrieved < 50) {
 		res = curl_easy_perform(curl_handle);
@@ -108,7 +111,7 @@ int main(int argc, char** argv) {
 */
 
 /*Threads Behaviour:
-	Parameters: retrieved, curl_handle, recv_buf, num_retrieved
+	Parameters: retrieved, num_retrieved, url
 	no return value
 	while num_retrieved < 50 grab more stuff
 */
