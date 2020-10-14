@@ -60,7 +60,7 @@ void *get_segment(void *arg) {
 		}
 		if (!p_in->retrieved[recv_buf.seq]) {
 			p_in->retrieved[recv_buf.seq] = 1;
-			char fname[256];
+			char fname[20];
 			sprintf(fname, "./output_%d.png", recv_buf.seq);
 			write_file(fname, recv_buf.buf, recv_buf.size);
 			*(p_in->num_retrieved) = *(p_in->num_retrieved) + 1;
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-        for(int i = 5; i < 51; i++) {
+        for(int i = 0; i < 51; i++) {
 		remove(filenames[i]);
 		free(filenames[i]);
 	}
