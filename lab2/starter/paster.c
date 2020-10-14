@@ -1,3 +1,4 @@
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,13 +18,14 @@
 /*Thread arguments*/
 struct thread_args
 {
-	int retrieved[50];
+	int* retrieved;
 	int* num_retrieved;
 	char* url;
-}
+};
 
 /*function passed to pthread to grab a segment*/
 void *get_segment(void *arg) {
+	struct thread_args *p_in = arg;
 	/*setup CURL*/
 	CURL *curl_handle;
 	CURLcode res;
@@ -32,9 +34,9 @@ void *get_segment(void *arg) {
 
 	curl_handle = curl_easy_init();
 	if (curl_handle == NULL) {
-		return -1;
+		return NULL;
 	}
-	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+	curl_easy_setopt(curl_handle, CURLOPT_URL, p_in->url);
 	/*callback function to process received data*/
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_cb_curl3);
 	/*set recv buffer*/
@@ -47,17 +49,17 @@ void *get_segment(void *arg) {
 	/*some servers may require a user-agent field*/
 	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
-	while (*num_retrieved < 50) {
+	while (*p_in->num_retrieved < 50) {
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
-			return -2;
+			return NULL;
 		}
-		if (!retrieved[recv_buf.seq]) {
+		if (!p_in->retrieved[recv_buf.seq]) {
 			char fname[256];
 			sprintf(fname, "./output_%d.png", recv_buf.seq);
 			write_file(fname, recv_buf.buf, recv_buf.size);
-			retrieved[recv_buf.seq] = 1;
-			*num_retrieved++;
+			p_in->retrieved[recv_buf.seq] = 1;
+			*p_in->num_retrieved++;
 		}
 	}
 
@@ -90,13 +92,28 @@ int main(int argc, char** argv) {
 	int retrieved[50];
 	memset(retrieved, 0, 50*sizeof(int));
 	int num_retrieved = 0;
+        char url[256];
+	sprintf(url, "%s%d", IMG_URL, img_no);
+
 	/*setup threads*/
 	pthread_t *p_tids = malloc(sizeof(pthread_t) * no_threads);
-	char url[256];
-	sprintf(url, "%s%d", IMG_URL, img_no);
+	struct thread_args *p_in = malloc(sizeof(struct thread_args));
+	p_in->retrieved = retrieved;
+	p_in->num_retrieved = &num_retrieved;
+	p_in->url = url;
+
+	for(int i = 0; i < no_threads; i++) {
+		pthread_create(p_tids + i, NULL, get_segment, p_in);
+	}
+
+	for(int i = 0; i < no_threads; i++) {
+		pthread_join(p_tids[i], NULL);
+		printf("Thread ID %lu joined.\n", p_tids[i]);
+	}
 
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 
+	free(p_in);
 	free(p_tids);
 
 	curl_global_cleanup();
