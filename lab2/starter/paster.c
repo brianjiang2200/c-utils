@@ -34,6 +34,8 @@ void *get_segment(void *arg) {
 
 	curl_handle = curl_easy_init();
 	if (curl_handle == NULL) {
+		recv_buf_cleanup(&recv_buf);
+		curl_easy_cleanup(curl_handle);
 		return NULL;
 	}
 	curl_easy_setopt(curl_handle, CURLOPT_URL, p_in->url);
@@ -52,6 +54,8 @@ void *get_segment(void *arg) {
 	while (*(p_in->num_retrieved) < 50) {
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
+			recv_buf_cleanup(&recv_buf);
+			curl_easy_cleanup(curl_handle);
 			return NULL;
 		}
 		if (!p_in->retrieved[recv_buf.seq]) {
