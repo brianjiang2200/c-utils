@@ -100,9 +100,9 @@ size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
         p->max_size = new_size;
     }
 
-    memcpy(p->buf + p->size, p_recv, realsize); /*copy data from libcurl*/
-    p->size += realsize;
-    p->buf[p->size] = 0;
+    memset(p->buf, 0, p->max_size);
+    memcpy(p->buf, p_recv, realsize); /*copy data from libcurl*/
+    p->size = realsize;
 
     return realsize;
 }
