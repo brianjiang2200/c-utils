@@ -49,7 +49,7 @@ void *get_segment(void *arg) {
 	/*some servers may require a user-agent field*/
 	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
-	while (*p_in->num_retrieved < 50) {
+	while (*(p_in->num_retrieved) < 50) {
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
 			return NULL;
@@ -59,7 +59,8 @@ void *get_segment(void *arg) {
 			sprintf(fname, "./output_%d.png", recv_buf.seq);
 			write_file(fname, recv_buf.buf, recv_buf.size);
 			p_in->retrieved[recv_buf.seq] = 1;
-			*p_in->num_retrieved++;
+			p_in->num_retrieved = *(p_in->num_retrieved) + 1;
+			printf("NUM_RETRIEVED: %d\n", *(p_in->num_retrieved));
 		}
 	}
 
