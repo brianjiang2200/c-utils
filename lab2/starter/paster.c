@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-        for(int i = 0; i < 51; i++) {
+        for(int i = 4; i < 51; i++) {
 		remove(filenames[i]);
 		free(filenames[i]);
 	}
