@@ -90,8 +90,9 @@ int catpng(int num_args, char** args) {
 	memcpy(new_IHDR->p_data + 4, &final_height, 4);
 
 	/*compute expected approximate IDAT Length*/
-	for (int i = 1; i < num_args; ++i) {
-		new_IDAT->length += IDAT_arr[i - 1]->length;
+	for (int i = 1; i < num_args - 1; ++i) {
+		printf("Image %d: IDAT Length - %u\n", i, IDAT_arr[i]->length);
+		new_IDAT->length += IDAT_arr[i]->length;
 	}
 
 	printf("Final IDAT Length: %u\n", new_IDAT->length);
