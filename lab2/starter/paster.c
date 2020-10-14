@@ -59,10 +59,10 @@ void *get_segment(void *arg) {
 			return NULL;
 		}
 		if (!p_in->retrieved[recv_buf.seq]) {
+			p_in->retrieved[recv_buf.seq] = 1;
 			char fname[256];
 			sprintf(fname, "./output_%d.png", recv_buf.seq);
 			write_file(fname, recv_buf.buf, recv_buf.size);
-			p_in->retrieved[recv_buf.seq] = 1;
 			*(p_in->num_retrieved) = *(p_in->num_retrieved) + 1;
 		}
 	}
