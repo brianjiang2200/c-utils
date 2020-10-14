@@ -91,6 +91,12 @@ int main(int argc, char** argv) {
 			break;
 		}
 	}
+	/*for default single thread (-t -n)*/
+	if(no_threads == 0) {
+		no_threads = 1;
+	}
+
+	printf("-t %d, -n %d\n", no_threads, img_no);
 
         curl_global_init(CURL_GLOBAL_DEFAULT);
 
