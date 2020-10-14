@@ -41,7 +41,7 @@ int catpng(int num_args, char** args) {
 
 	FILE* sample = fopen(args[1], "r");
 	if (sample == NULL) {
-		return -1;
+		return -2;
 	}
 
 	/*Init array of IDAT chunks*/
@@ -68,7 +68,7 @@ int catpng(int num_args, char** args) {
 		FILE* png_inst = fopen(args[i], "r");
 		if (png_inst == NULL) {
 			/*add freeing operations here*/
-			return -1;
+			return -3;
 		}
 
 		/*read image height*/

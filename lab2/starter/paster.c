@@ -59,8 +59,10 @@ void *get_segment(void *arg) {
 			sprintf(fname, "./output_%d.png", recv_buf.seq);
 			write_file(fname, recv_buf.buf, recv_buf.size);
 			p_in->retrieved[recv_buf.seq] = 1;
-			p_in->num_retrieved = *(p_in->num_retrieved) + 1;
+
+			*(p_in->num_retrieved) = *(p_in->num_retrieved) + 1;
 			printf("NUM_RETRIEVED: %d\n", *(p_in->num_retrieved));
+
 		}
 	}
 
@@ -89,6 +91,8 @@ int main(int argc, char** argv) {
 		}
 	}
 
+        curl_global_init(CURL_GLOBAL_DEFAULT);
+
 	/*map of retrieved images*/
 	int retrieved[50];
 	memset(retrieved, 0, 50*sizeof(int));
@@ -112,8 +116,21 @@ int main(int argc, char** argv) {
 		printf("Thread ID %lu joined.\n", p_tids[i]);
 	}
 
-	curl_global_init(CURL_GLOBAL_DEFAULT);
+	char* filenames[51];
+	filenames[0] = malloc(20*sizeof(char));
+	sprintf(filenames[0], "first");
+	for(int i = 1; i < 51; i++) {
+		filenames[i] = malloc(20*sizeof(char));
+		sprintf(filenames[i], "output_%d.png", i);
+	}
 
+	int finalres = catpng(51, filenames);
+	printf("%d\n", finalres);
+
+        for(int i = 0; i < 51; i++) {
+		remove(filenames[i]);
+		free(filenames[i]);
+	}
 	free(p_in);
 	free(p_tids);
 
