@@ -67,6 +67,7 @@ int catpng(int num_args, char** args) {
 	for (int i = 2; i < num_args; ++i) {
 		FILE* png_inst = fopen(args[i], "r");
 		if (png_inst == NULL) {
+			printf("(%s)\n", args[i]);
 			/*add freeing operations here*/
 			return -3;
 		}

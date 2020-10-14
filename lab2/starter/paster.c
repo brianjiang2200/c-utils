@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
 	sprintf(filenames[0], "first");
 	for(int i = 1; i < 51; i++) {
 		filenames[i] = malloc(20*sizeof(char));
-		sprintf(filenames[i], "output_%d.png", i);
+		sprintf(filenames[i], "output_%d.png", i - 1);
 	}
 
 	int finalres = catpng(51, filenames);
