@@ -58,8 +58,8 @@ int get_chunk(struct chunk *chk, FILE *fp, int flag) {
 		return -1;
 	}
 
-	int data_size = 0;
-
+/*	int data_size = 0;
+*/
 	switch(flag) {
 		case 0:
 			fseek(fp, 8, SEEK_SET);
