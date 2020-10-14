@@ -88,7 +88,7 @@ size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
     size_t realsize = size * nmemb;
     RECV_BUF *p = (RECV_BUF *)p_userdata;
  
-    if (p->size + realsize + 1 > p->max_size) {/* hope this rarely happens */ 
+    if (realsize + 1 > p->max_size) {/* hope this rarely happens */ 
         /* received data is not 0 terminated, add one byte for terminating 0 */
         size_t new_size = p->max_size + max(BUF_INC, realsize + 1);   
         char *q = realloc(p->buf, new_size);

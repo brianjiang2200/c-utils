@@ -126,10 +126,17 @@ int main(int argc, char** argv) {
 
 	int catres = catpng(51, filenames);
 	if(catres != 0) {
+		for (int i = 0; i < 51; ++i) {
+			remove(filenames[i]);
+			free(filenames[i]);
+		}
+		free(p_in);
+		free(p_tids);
+		curl_global_cleanup();
 		return -1;
 	}
 
-        for(int i = 1; i < 51; i++) {
+        for(int i = 0; i < 51; i++) {
 		remove(filenames[i]);
 		free(filenames[i]);
 	}
@@ -138,6 +145,7 @@ int main(int argc, char** argv) {
 
 	curl_global_cleanup();
 
+	printf("Program terminated with return code 0\n");
 	return 0;
 }
 

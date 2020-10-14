@@ -67,7 +67,6 @@ int catpng(int num_args, char** args) {
 	for (int i = 2; i < num_args; ++i) {
 		FILE* png_inst = fopen(args[i], "r");
 		if (png_inst == NULL) {
-			printf("(%s)\n", args[i]);
 			/*add freeing operations here*/
 			return -3;
 		}
@@ -96,7 +95,7 @@ int catpng(int num_args, char** args) {
 	}
 
 	/*Concatenate IDAT data*/
-	U8* inflated_data = malloc(30* new_IDAT->length);
+	U8* inflated_data = malloc(100 * new_IDAT->length);
 	U64 buffer_index = 0;
 	for (int i = 0; i < num_args - 1; ++i) {
 		U64 len_inf = 0;
@@ -104,6 +103,7 @@ int catpng(int num_args, char** args) {
 		int ret = mem_inf(inflated_data + buffer_index, &len_inf, IDAT_arr[i]->p_data, src_length);
 		if (ret) {	/*failure*/
 			/*clean up*/
+			printf("Mem Inf Error: Return value %d\n", ret);
 			return ret;
 		}
 		buffer_index += len_inf;
@@ -114,6 +114,7 @@ int catpng(int num_args, char** args) {
 	int ret = mem_def(new_IDAT->p_data, &len_def, inflated_data, buffer_index, Z_DEFAULT_COMPRESSION);
 	if (ret) {
 		/*clean up*/
+		printf("Mem Def Error: Return value %d\n", ret);
 		return ret;
 	}
 	new_IDAT->length = len_def;
