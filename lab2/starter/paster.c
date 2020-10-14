@@ -120,9 +120,12 @@ int main(int argc, char** argv) {
 		sprintf(filenames[i], "output_%d.png", i - 1);
 	}
 
-	catpng(51, filenames);
+	int catres = catpng(51, filenames);
+	if(catres != 0) {
+		return -1;
+	}
 
-        for(int i = 0; i < 51; i++) {
+        for(int i = 5; i < 51; i++) {
 		remove(filenames[i]);
 		free(filenames[i]);
 	}
