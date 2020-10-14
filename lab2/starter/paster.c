@@ -30,10 +30,41 @@ void *get_segment(void *arg) {
 	RECV_BUF recv_buf;
 	recv_buf_init(&recv_buf, BUF_SIZE);
 
-	curl_handle = curl_easy_init(0;
+	curl_handle = curl_easy_init();
 	if (curl_handle == NULL) {
 		return -1;
 	}
+	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+	/*callback function to process received data*/
+	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_cb_curl3);
+	/*set recv buffer*/
+	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&recv_buf);
+	/*callback to process received header data*/
+	curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_cb_curl);
+	/*set recv buffer*/
+	curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void*)&recv_buf);
+
+	/*some servers may require a user-agent field*/
+	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+
+	while (*num_retrieved < 50) {
+		res = curl_easy_perform(curl_handle);
+		if (res != CURLE_OK) {
+			return -2;
+		}
+		if (!retrieved[recv_buf.seq]) {
+			char fname[256];
+			sprintf(fname, "./output_%d.png", recv_buf.seq);
+			write_file(fname, recv_buf.buf, recv_buf.size);
+			retrieved[recv_buf.seq] = 1;
+			*num_retrieved++;
+		}
+	}
+
+	recv_buf_cleanup(&recv_buf);
+	curl_easy_cleanup(curl_handle);
+
+	return NULL;
 }
 
 int main(int argc, char** argv) {
@@ -66,40 +97,9 @@ int main(int argc, char** argv) {
 
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 
-
-	/*curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-	/*callback function to process received data*/
-	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_cb_curl3);
-	/*set recv buffer*/
-	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&recv_buf);
-	/*callback to process received header data*/
-	curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_cb_curl);
-	/*set recv buffer*/
-	curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void*)&recv_buf);
-
-	/*some servers may require a user-agent field*/
-	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
-
-	while (num_retrieved < 50) {
-		res = curl_easy_perform(curl_handle);
-		if (res != CURLE_OK) {
-			return -2;
-		}
-		if (!retrieved[recv_buf.seq]) {
-			char fname[256];
-			sprintf(fname, "./output_%d.png", recv_buf.seq);
-			write_file(fname, recv_buf.buf, recv_buf.size);
-			retrieved[recv_buf.seq] = 1;
-			num_retrieved++;
-		}
-	}
-
 	free(p_tids);
 
-	curl_easy_cleanup(curl_handle);
-
 	curl_global_cleanup();
-	recv_buf_cleanup(&recv_buf);
 
 	return 0;
 }
