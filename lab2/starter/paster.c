@@ -91,7 +91,6 @@ int main(int argc, char** argv) {
 			break;
 		}
 	}
-	printf("-t %d, -n %d\n", no_threads, img_no);
 
         curl_global_init(CURL_GLOBAL_DEFAULT);
 

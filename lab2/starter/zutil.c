@@ -133,7 +133,7 @@ int mem_inf(U8 *dest, U64 *dest_len, U8 *source,  U64 source_len)
     /* clean up and return */
     (void) inflateEnd(&strm);
     *dest_len = inf_len;
-    
+
     return (ret == Z_STREAM_END) ? Z_OK : Z_DATA_ERROR;
 }
 
