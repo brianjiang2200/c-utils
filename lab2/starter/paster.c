@@ -59,10 +59,7 @@ void *get_segment(void *arg) {
 			sprintf(fname, "./output_%d.png", recv_buf.seq);
 			write_file(fname, recv_buf.buf, recv_buf.size);
 			p_in->retrieved[recv_buf.seq] = 1;
-
 			*(p_in->num_retrieved) = *(p_in->num_retrieved) + 1;
-			printf("NUM_RETRIEVED: %d\n", *(p_in->num_retrieved));
-
 		}
 	}
 
@@ -113,7 +110,6 @@ int main(int argc, char** argv) {
 
 	for(int i = 0; i < no_threads; i++) {
 		pthread_join(p_tids[i], NULL);
-		printf("Thread ID %lu joined.\n", p_tids[i]);
 	}
 
 	char* filenames[51];
@@ -124,8 +120,7 @@ int main(int argc, char** argv) {
 		sprintf(filenames[i], "output_%d.png", i - 1);
 	}
 
-	int finalres = catpng(51, filenames);
-	printf("%d\n", finalres);
+	catpng(51, filenames);
 
         for(int i = 0; i < 51; i++) {
 		remove(filenames[i]);
