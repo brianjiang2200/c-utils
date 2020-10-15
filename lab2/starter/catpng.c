@@ -108,7 +108,6 @@ int catpng(int num_args, char** args) {
 			printf("Mem Inf Error: Return value %d\n", ret);
 			return ret;
 		}
-		printf("Len_Inf: %lu\n", len_inf);
 		buffer_index += len_inf;
 	}
 	free(new_IDAT->p_data);
