@@ -51,6 +51,7 @@ void *get_segment(void *arg) {
 	/*some servers may require a user-agent field*/
 	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
+	size_t size = 0;
 	while (*(p_in->num_retrieved) < 50) {
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
@@ -60,16 +61,13 @@ void *get_segment(void *arg) {
 		}
 		if (!p_in->retrieved[recv_buf.seq]) {
 			p_in->retrieved[recv_buf.seq] = 1;
-
-			printf("RECV_BUF.SEQ: %d\n", recv_buf.seq);
+			*(p_in->num_retrieved) = *(p_in->num_retrieved) + 1;
 
 			char fname[20];
 			sprintf(fname, "./output_%d.png", recv_buf.seq);
 
-			printf("recv_buf.buf: (%c%c%c%c)\n", recv_buf.buf[0], recv_buf.buf[1], recv_buf.buf[2], recv_buf.buf[3]);
-
-			write_file(fname, recv_buf.buf, recv_buf.size);
-			*(p_in->num_retrieved) = *(p_in->num_retrieved) + 1;
+			write_file(fname, recv_buf.buf + size, recv_buf.size - size);
+			size = recv_buf.size;
 		}
 	}
 

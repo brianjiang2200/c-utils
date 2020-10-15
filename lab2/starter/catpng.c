@@ -91,7 +91,7 @@ int catpng(int num_args, char** args) {
 
 	/*compute expected approximate IDAT Length*/
 	for (int i = 1; i < num_args - 1; ++i) {
-		printf("Image %d: IDAT Length - %u\n", i, IDAT_arr[i]->length);
+		/*printf("Image %d: IDAT Length - %u\n", i, IDAT_arr[i]->length);*/
 		new_IDAT->length += IDAT_arr[i]->length;
 	}
 

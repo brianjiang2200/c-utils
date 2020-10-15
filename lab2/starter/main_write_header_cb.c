@@ -88,7 +88,7 @@ size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
     size_t realsize = size * nmemb;
     RECV_BUF *p = (RECV_BUF *)p_userdata;
  
-    if (realsize + 1 > p->max_size) {/* hope this rarely happens */ 
+    if (p->size + realsize + 1 > p->max_size) {/* hope this rarely happens */ 
         /* received data is not 0 terminated, add one byte for terminating 0 */
         size_t new_size = p->max_size + max(BUF_INC, realsize + 1);   
         char *q = realloc(p->buf, new_size);
@@ -100,11 +100,9 @@ size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
         p->max_size = new_size;
     }
 
-    memset(p->buf, 0, p->max_size);
-    memcpy(p->buf, p_recv, realsize); /*copy data from libcurl*/
-    p->size = realsize;
-
-	printf("p_recv: (%c%c%c%c)\n", p_recv[0], p_recv[1], p_recv[2], p_recv[3]);
+    memcpy(p->buf + p->size, p_recv, realsize); /*copy data from libcurl*/
+    p->size += realsize;
+    p->buf[p->size] = 0;
 
     return realsize;
 }
