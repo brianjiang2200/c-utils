@@ -104,6 +104,8 @@ size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
     memcpy(p->buf, p_recv, realsize); /*copy data from libcurl*/
     p->size = realsize;
 
+	printf("p_recv: (%c%c%c%c)\n", p_recv[0], p_recv[1], p_recv[2], p_recv[3]);
+
     return realsize;
 }
 

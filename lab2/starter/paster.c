@@ -60,8 +60,14 @@ void *get_segment(void *arg) {
 		}
 		if (!p_in->retrieved[recv_buf.seq]) {
 			p_in->retrieved[recv_buf.seq] = 1;
+
+			printf("RECV_BUF.SEQ: %d\n", recv_buf.seq);
+
 			char fname[20];
 			sprintf(fname, "./output_%d.png", recv_buf.seq);
+
+			printf("recv_buf.buf: (%c%c%c%c)\n", recv_buf.buf[0], recv_buf.buf[1], recv_buf.buf[2], recv_buf.buf[3]);
+
 			write_file(fname, recv_buf.buf, recv_buf.size);
 			*(p_in->num_retrieved) = *(p_in->num_retrieved) + 1;
 		}
@@ -127,7 +133,7 @@ int main(int argc, char** argv) {
 	int catres = catpng(51, filenames);
 	if(catres != 0) {
 		for (int i = 0; i < 51; ++i) {
-			/*remove(filenames[i]);*/
+			remove(filenames[i]);
 			free(filenames[i]);
 		}
 		free(p_in);
