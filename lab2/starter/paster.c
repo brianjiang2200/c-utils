@@ -149,7 +149,6 @@ int main(int argc, char** argv) {
 
 	curl_global_cleanup();
 
-	printf("Program terminated with return code 0\n");
 	return 0;
 }
 
