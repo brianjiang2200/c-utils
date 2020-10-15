@@ -67,8 +67,8 @@ void *get_segment(void *arg) {
 			sprintf(fname, "./output_%d.png", recv_buf.seq);
 
 			write_file(fname, recv_buf.buf + size, recv_buf.size - size);
-			size = recv_buf.size;
 		}
+		size = recv_buf.size;
 	}
 
 	recv_buf_cleanup(&recv_buf);
