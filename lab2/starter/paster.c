@@ -127,8 +127,8 @@ int main(int argc, char** argv) {
 	int catres = catpng(51, filenames);
 	if(catres != 0) {
 		for (int i = 0; i < 51; ++i) {
-			remove(filenames[i]);
-			free(filenames[i]);
+/*			remove(filenames[i]);
+*/			free(filenames[i]);
 		}
 		free(p_in);
 		free(p_tids);
@@ -137,8 +137,8 @@ int main(int argc, char** argv) {
 	}
 
         for(int i = 0; i < 51; i++) {
-		remove(filenames[i]);
-		free(filenames[i]);
+/*		remove(filenames[i]);
+*/		free(filenames[i]);
 	}
 	free(p_in);
 	free(p_tids);
