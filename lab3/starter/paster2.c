@@ -37,6 +37,10 @@ int main(int argc, char** argv) {
 	int sleep_time = strtoul(argv[4], NULL, 10);
 	int img_no = strtoul(argv[5], NULL, 10);
 
+	/*array of inflated IDAT data*/
+	struct chunk** IDAT_arr = malloc(50 * sizeof(struct chunk*));
+
+
 	/*record time after all.png is output*/
 	if (gettimeofday(&tv, NULL) != 0) {
 		perror("gettimeofday");
@@ -44,6 +48,8 @@ int main(int argc, char** argv) {
 	}
 	times[1] = (tv.tv_sec) + tv.tv_usec/1000000.;
 	printf("paster2 execution time: %.6lf seconds\n", times[1] - times[0]);
+
+	free(IDAT_arr);
 
 	return 0;
 }
