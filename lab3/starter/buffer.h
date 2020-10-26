@@ -5,7 +5,7 @@
 typedef struct Bnode
 {
 	RECV_BUF* buf;
-	RECV_BUF* next; 
+	Bnode* next;
 } Bnode;
 
 typedef struct Buffer
