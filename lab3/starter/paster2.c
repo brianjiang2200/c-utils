@@ -40,6 +40,14 @@ int main(int argc, char** argv) {
 
 	/*array of inflated IDAT data*/
 	struct chunk** IDAT_arr = malloc(50 * sizeof(struct chunk*));
+	/*Fixed Size Global Buffer*/
+	Buffer* global_buf = malloc(sizeof(Buffer));
+	Buffer_init(global_buf, buf_size);
+
+	/*Do work here*/
+
+
+	/*Initialize all.png chunks after work has been performed*/
 
 
 	/*record time after all.png is output*/
@@ -51,6 +59,8 @@ int main(int argc, char** argv) {
 	printf("paster2 execution time: %.6lf seconds\n", times[1] - times[0]);
 
 	free(IDAT_arr);
+	Buffer_clean(global_buf);
+	free(global_buf);
 
 	return 0;
 }
