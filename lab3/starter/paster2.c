@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/shm.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -45,6 +47,11 @@ int main(int argc, char** argv) {
 	/*Fixed Size Global Buffer*/
 	Buffer* global_buf = malloc(sizeof(Buffer));
 	Buffer_init(global_buf, buf_size);
+	int buf_shmid = shmget(IPC_PRIVATE, sizeof(Buffer), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+	if (buf_shmid == -1) {
+		perror("shmget");
+		abort();
+	}
 
 	/*Do work here*/
 	/*Initialize producer processes*/
@@ -55,7 +62,7 @@ int main(int argc, char** argv) {
 			abort();
 		} else if (prod_ids[i] == 0) {
 			/*perform all producer work here*/
-			printf("Producer working!\n");
+			producer();
 			return 0;
 		}
 	}
@@ -67,7 +74,7 @@ int main(int argc, char** argv) {
 			abort();
 		} else if (cons_ids[i] == 0) {
 			/*perform all consumer work here*/
-			printf("Consumer working!\n");
+			consumer();
 			return 0;
 		}
 	}
@@ -112,3 +119,13 @@ int main(int argc, char** argv) {
 	Consumers process data into global data structures and sleep for sleep_time ms
 	Output all.png when done
 */
+
+int consumer() {
+	printf("Consumer working!\n");
+	return 0;
+}
+
+int producer() {
+	printf("Producer working!\n");
+	return 0;
+}
