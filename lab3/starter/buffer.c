@@ -69,4 +69,20 @@ void Buffer_clean(Buffer *b) {
 	b->size = 0;
 }
 
+int main() {
+	/*testing*/
+	Buffer* myBuf = malloc(sizeof(Buffer));
+	Buffer_init(myBuf, 5);
+	printf("Buffer initial size: %d\n", myBuf->size);
+	printf("Buffer max size: %d\n", myBuf->max_size);
+	RECV_BUF* testBuf = malloc(sizeof(RECV_BUF));
+	Buffer_add(myBuf, testBuf);
+	printf("Buffer size: %d\n", myBuf->size);
+	Buffer_pop(myBuf);
+	printf("Buffer size: %d\n", myBuf->size);
+	Buffer_clean(myBuf);
+	free(myBuf);
+	return 0;
+}
+
 
