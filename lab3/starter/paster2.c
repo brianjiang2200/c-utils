@@ -45,8 +45,6 @@ int main(int argc, char** argv) {
 	/*array of inflated IDAT data*/
 	struct chunk** IDAT_arr = malloc(50 * sizeof(struct chunk*));
 	/*Fixed Size Global Buffer*/
-	Buffer* global_buf = malloc(sizeof(Buffer));
-	Buffer_init(global_buf, buf_size);
 	int buf_shmid = shmget(IPC_PRIVATE, sizeof(Buffer), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 	if (buf_shmid == -1) {
 		perror("shmget");
@@ -61,8 +59,23 @@ int main(int argc, char** argv) {
 			perror("fork");
 			abort();
 		} else if (prod_ids[i] == 0) {
+			/*generate shared memory segments*/
+			void *tmp = shmat(buf_shmid, NULL, 0);
+			if (tmp == (void*) -1 ) {
+				perror("shmat");
+				abort();
+			}
+			Buffer* shared_buf = (Buffer*) tmp;
+			/*Must init shared buffer prior to first work*/
+			if (i == 0) {
+				Buffer_init(shared_buf, buf_size);
+			}
 			/*perform all producer work here*/
 			producer();
+			if (shmdt(tmp) != 0) {
+				perror("shmdt");
+				abort();
+			}
 			return 0;
 		}
 	}
@@ -103,8 +116,6 @@ int main(int argc, char** argv) {
 	free(prod_ids);
 	free(cons_ids);
 	free(IDAT_arr);
-	Buffer_clean(global_buf);
-	free(global_buf);
 
 	return 0;
 }
