@@ -1,11 +1,12 @@
+#pragma once
 #include <stdio.h>
 #include <stdlib.h>
 #include "main_write_header_cb.h"
 
-typedef struct Bnode
+typedef struct Bnode_tmp
 {
 	RECV_BUF* buf;
-	Bnode* next;
+	struct Bnode_tmp* next;
 } Bnode;
 
 typedef struct Buffer

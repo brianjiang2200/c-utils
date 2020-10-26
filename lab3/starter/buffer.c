@@ -1,7 +1,6 @@
 /*Custom Implementation of a fixed size queue to store recieve data from a CURL callback*/
 #include <stdio.h>
 #include <stdlib.h>
-#include "main_write_header_cb.h"
 #include "buffer.h"
 
 void Buffer_init(Buffer* b, int max_size) {
@@ -69,8 +68,8 @@ void Buffer_clean(Buffer *b) {
 	b->size = 0;
 }
 
+/*
 int main() {
-	/*testing*/
 	Buffer* myBuf = malloc(sizeof(Buffer));
 	Buffer_init(myBuf, 5);
 	printf("Buffer initial size: %d\n", myBuf->size);
@@ -84,5 +83,5 @@ int main() {
 	free(myBuf);
 	return 0;
 }
-
+*/
 
