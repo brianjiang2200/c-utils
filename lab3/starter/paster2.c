@@ -86,8 +86,19 @@ int main(int argc, char** argv) {
 			perror("fork");
 			abort();
 		} else if (cons_ids[i] == 0) {
+			/*generate shared memory segments*/
+			void *tmp = shmat(buf_shmid, NULL, 0);
+			if (tmp == (void*) -1 ) {
+				perror("shmat");
+				abort();
+			}
+			Buffer* shared_buf = (Buffer*) tmp;
 			/*perform all consumer work here*/
 			consumer();
+			if (shmdt(tmp) != 0) {
+				perror("shmdt");
+				abort();
+			}
 			return 0;
 		}
 	}
