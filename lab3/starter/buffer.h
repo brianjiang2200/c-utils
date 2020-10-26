@@ -2,16 +2,24 @@
 #include <stdlib.h>
 #include "main_write_header_cb.h"
 
+typedef struct Bnode
+{
+	RECV_BUF* buf;
+	RECV_BUF* next; 
+} Bnode;
+
 typedef struct Buffer
 {
 	int size;
-	RECV_BUF* tail;
-	RECV_BUF* head;
+	int max_size;
+	Bnode* tail;
+	Bnode* head;
 } Buffer;
 
-void Buffer_init();
-void Buffer_add(RECV_BUF* node);
-void Buffer_pop();
+void Buffer_init(Buffer* b);
+void Buffer_add(Buffer* b, RECV_BUF* node);
+void Buffer_pop(Buffer* b);
+void Buffer_clean(Buffer *b);
 
 
 

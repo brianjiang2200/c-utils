@@ -10,6 +10,7 @@
 #include <curl/curl.h>
 #include "catpng.h"
 #include "main_write_header_cb.h"
+#include "buffer.h"
 
 #define IMG_URL "http://ece252-1.uwaterloo.ca:2530/image?img="
 #define ECE252_HEADER "X-Ece252-Fragment: "
