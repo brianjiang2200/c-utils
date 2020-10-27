@@ -213,13 +213,19 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		//Sleep for specified amount of time
 		usleep(sleep_time * 1000);
 
+		//If > 0, decrement and execute. If 0, wait until item exists
 		sem_wait(pc->shared_items);
+
+//CRITICAL PROCESS 1
 		pthread_mutex_lock(pc->shared_mutex);
 
 		//Create the image segment PNG file
 		char fname[20];
 		sprintf(fname, "output_%d.png", pc->shared_buf->tail->buf->seq);
 		write_file(fname, pc->shared_buf->tail->buf->buf, pc->shared_buf->tail->buf->size);
+
+//END OF CRITICAL PROCESS 1
+		pthread_mutex_unlock(pc->shared_mutex);
 
 		//Open PNG file for reading
 		FILE* sample = fopen(fname, "r");
@@ -249,6 +255,9 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 			return ret;
 		}
 
+//CRITICAL PROCESS 2
+		pthread_mutex_lock(pc->shared_mutex);
+
 		//Copy inflated data into proper place in memory
 		all_IDAT[pc->shared_buf->tail->buf->seq] = new_IDAT;	//NEEDS TO BE inflated_data
 
@@ -258,7 +267,10 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		//Increment number of images processed
 		pc->num_consumed++;
 
+//END OF CRITICAL PROCESS 2
 		pthread_mutex_unlock(pc->shared_mutex);
+
+		//Increments number of spaces
 		sem_post(pc->shared_spaces);
 	}
 
