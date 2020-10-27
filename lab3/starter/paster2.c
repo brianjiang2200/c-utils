@@ -99,7 +99,10 @@ int main(int argc, char** argv) {
                                 shared_multipc->num_consumed = 0;
 			}
 			/*perform all producer work here*/
-			producer(shared_multipc, img_no);
+			if (producer(shared_multipc, img_no) != 0) {
+				printf("Producer failed\n");
+				return -1;
+			}
 			if (shmdt(multipc_tmp) != 0) {
 				perror("shmdt");
 				abort();
@@ -144,6 +147,21 @@ int main(int argc, char** argv) {
 	}
 
 	/*Initialize all.png chunks after work has been performed*/
+	void* IDAT_tmp = shmat(IDAT_shmid, NULL, 0);
+	if (IDAT_tmp == (void*)-1) {
+		perror("shmat");
+		abort();
+	}
+	struct chunk** IDAT_arr = (struct chunk**) IDAT_tmp;
+	for (int i = 0; i < 50; ++i) {
+		if (IDAT_arr[i] != NULL) {
+			printf("IDAT %d length: %u\n", i, IDAT_arr[i]->length);
+		}
+	}
+	if (shmdt(IDAT_tmp) != 0) {
+		perror("shmdt");
+		abort();
+	}
 
 	/*Clean up Shared Mem Segments*/
 	if (shmctl(IDAT_shmid, IPC_RMID, NULL) == -1 || shmctl(multipc_shmid, IPC_RMID, NULL) == -1 ) {
