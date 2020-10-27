@@ -216,6 +216,9 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 //END OF CRITICAL PROCESS 0
 
 	while(k < 50) {
+
+		puts("test_consumer");
+
 		//Sleep for specified amount of time
 		usleep(sleep_time * 1000);
 
@@ -260,13 +263,14 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 			printf("Mem Inf Error: Return value %d\n", ret);
 			return ret;
 		}
+                new_IDAT->p_data = inflated_data;
+                new_IDAT->length = len_inf;
 
 //CRITICAL PROCESS 2
 		pthread_mutex_lock(&pc->shared_mutex);
 
 		//Copy inflated data into proper place in memory
-		//cont...
-		all_IDAT[pc->shared_buf->tail->buf->seq] = new_IDAT;	//NEEDS TO BE inflated_data
+		all_IDAT[pc->shared_buf->tail->buf->seq] = new_IDAT;
 
 		//Pop the image read from the queue
 		Buffer_pop(pc->shared_buf);
@@ -302,6 +306,8 @@ int producer(multipc* pc, int img_no) {
 	pthread_mutex_unlock(&pc->shared_mutex);
 
 	while(k < 50) {
+		puts("test_producer");
+
 		RECV_BUF recv_buf;
 		recv_buf_init(&recv_buf, 10000);
 		char url[64];
