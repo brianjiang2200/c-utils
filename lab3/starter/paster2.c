@@ -29,7 +29,7 @@ typedef struct DingLirenWC {
 	int num_consumed;
 } multipc;
 
-int consumer(multipc* pc);
+int consumer(multipc* pc, struct chunk** all_IDAT);
 int producer(multipc* pc);
 
 int main(int argc, char** argv) {
@@ -54,6 +54,8 @@ int main(int argc, char** argv) {
 	int no_consumers = strtoul(argv[3], NULL, 10);
 	int sleep_time = strtoul(argv[4], NULL, 10);
 	int img_no = strtoul(argv[5], NULL, 10);
+
+	curl_global_init(CURL_GLOBAL_DEFAULT):
 
 	/*array of inflated IDAT data*/
 	int IDAT_shmid = shmget(IPC_PRIVATE, 50 * sizeof(struct chunk*), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
@@ -84,8 +86,8 @@ int main(int argc, char** argv) {
 			/*Must init shared memory elements prior to work*/
 			if (i == 0) {
 				Buffer_init(shared_multipc->shared_buf, buf_size);
-				sem_init(shared_multipc->shared_spaces, 0, buf_size);
-				sem_init(shared_multipc->shared_items, 0, 0);
+				sem_init(shared_multipc->shared_spaces, 1, buf_size);
+				sem_init(shared_multipc->shared_items, 1, 0);
 				pthread_mutex_init(shared_multipc->shared_mutex, NULL);
 				shared_multipc->pindex = 0;
 				shared_multipc->cindex = 0;
@@ -118,7 +120,7 @@ int main(int argc, char** argv) {
 			multipc* shared_multipc = (multipc*) multipc_tmp;
 			struct chunk** shared_IDAT = (struct chunk**) IDAT_tmp;
 			/*perform all consumer work here*/
-			consumer(shared_multipc);
+			consumer(shared_multipc, shared_IDAT);
 			if (shmdt(multipc_tmp) != 0 || shmdt(IDAT_tmp) != 0) {
 				perror("shmdt");
 				abort();
@@ -151,6 +153,8 @@ int main(int argc, char** argv) {
 	free(prod_ids);
 	free(cons_ids);
 
+	curl_global_cleanup();
+
 	return 0;
 }
 
@@ -165,10 +169,22 @@ int main(int argc, char** argv) {
 	Output all.png when done
 */
 
-int consumer(multipc* pc) {
+int consumer(multipc* pc, struct chunk** all_IDAT) {
 	printf("Consumer working!\n");
+
+	while(pc->num_consumed < 50) {
+		//
+
+	}
+
 	return 0;
 }
+
+/*ALGORITHM:
+	For each image segment (1-50):
+		decrement items (if not 0, else wait until not 0)
+
+*/
 
 int producer(multipc* pc) {
 	printf("Producer working!\n");
