@@ -29,13 +29,8 @@ typedef struct DingLirenWC {
 	int num_consumed;
 } multipc;
 
-<<<<<<< HEAD
 int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time);
 int producer(multipc* pc);
-=======
-int consumer(multipc* pc, struct chunk** all_IDAT);
-int producer(multipc* pc, int img_no);
->>>>>>> ebd184f574781ba6dce9ea7ef8be5e235955c618
 
 int main(int argc, char** argv) {
 
