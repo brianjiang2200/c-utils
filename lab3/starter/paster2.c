@@ -25,6 +25,8 @@ typedef struct DingLirenWC {
 	int pindex;
 	int cindex;
 	pthread_mutex_t* shared_mutex;
+	int num_produced;
+	int num_consumed;
 } multipc;
 
 int consumer(multipc* pc);
@@ -54,11 +56,11 @@ int main(int argc, char** argv) {
 	int img_no = strtoul(argv[5], NULL, 10);
 
 	/*array of inflated IDAT data*/
-	struct chunk** IDAT_arr = malloc(50 * sizeof(struct chunk*));
+	int IDAT_shmid = shmget(IPC_PRIVATE, 50 * sizeof(struct chunk*), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 	/*Init all required shared multipc elements*/
 	int multipc_shmid = shmget(IPC_PRIVATE, sizeof(multipc), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 	/*fail if error*/
-	if (multipc_shmid == -1) {
+	if (multipc_shmid == -1 || IDAT_shmid == -1) {
 		perror("shmget");
 		abort();
 	}
@@ -87,6 +89,8 @@ int main(int argc, char** argv) {
 				pthread_mutex_init(shared_multipc->shared_mutex, NULL);
 				shared_multipc->pindex = 0;
 				shared_multipc->cindex = 0;
+				shared_multipc->num_produced = 0;
+                                shared_multipc->num_consumed = 0;
 			}
 			/*perform all producer work here*/
 			producer(shared_multipc);
@@ -106,14 +110,16 @@ int main(int argc, char** argv) {
 		} else if (cons_ids[i] == 0) {
 			/*generate shared memory segments*/
 			void* multipc_tmp = shmat(multipc_shmid, NULL, 0);
-			if (multipc_tmp == (void*) -1 ) {
+			void* IDAT_tmp = shmat(IDAT_shmid, NULL, 0);
+			if (multipc_tmp == (void*) -1 || IDAT_tmp == (void*) -1) {
 				perror("shmat");
 				abort();
 			}
 			multipc* shared_multipc = (multipc*) multipc_tmp;
+			struct chunk** shared_IDAT = (struct chunk**) IDAT_tmp;
 			/*perform all consumer work here*/
 			consumer(shared_multipc);
-			if (shmdt(multipc_tmp) != 0) {
+			if (shmdt(multipc_tmp) != 0 || shmdt(IDAT_tmp) != 0) {
 				perror("shmdt");
 				abort();
 			}
@@ -144,7 +150,6 @@ int main(int argc, char** argv) {
 
 	free(prod_ids);
 	free(cons_ids);
-	free(IDAT_arr);
 
 	return 0;
 }
