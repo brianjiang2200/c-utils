@@ -30,7 +30,7 @@ typedef struct DingLirenWC {
 } multipc;
 
 int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time);
-int producer(multipc* pc);
+int producer(multipc* pc, int img_no);
 
 int main(int argc, char** argv) {
 
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
                                 shared_multipc->num_consumed = 0;
 			}
 			/*perform all producer work here*/
-			producer(shared_multipc);
+			producer(shared_multipc);	//ADD IMG_NO
 			if (shmdt(multipc_tmp) != 0) {
 				perror("shmdt");
 				abort();
@@ -172,36 +172,55 @@ int main(int argc, char** argv) {
 int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 	printf("Consumer working!\n");
 
-	pthread_mutex_lock(mutex);
-	int num_consumed = pc->num_consumed;	//will this temp variable change before while loop?
-	pthread_mutex_unlock(mutex);
-
-	while(num_consumed < 50) {
-
-		wait(pc->shared_spaces);
-
+	while(pc->num_consumed < 50) {
+		sem_wait(pc->shared_items);
 		pthread_mutex_lock(mutex);
 
-		//sleep for specified amount of s = ms/1000
+		//Sleep for specified amount of time
 		sleep(sleep_time / 1000);
 
-		//read image segments out of buffer into IDAT chunk array
-		// = pc->shared_buf->tail->buf
+		//Create the image segment PNG file
+		char fname[20];
+		sprintf(fname, "output_%d.png", pc->shared_buf->tail->buf.seq);
+		write_file(fname, pc->shared_buf->tail->buf.buf, pc->shared_buf->tail->buf.size);
 
-		//pop the image read (tail) from buffer
+		//Open PNG file for reading
+		FILE* sample = fopen(fname, "r");
+
+		//Read header
+		U8 header[8];
+		fread(header, 8, 1, sample);
+
+		//Validate the received image segment
+		if(is_png(header)) {
+			perror("is_png");
+		}
+
+		//Read IDAT
+                struct chunk* new_IDAT = malloc(sizeof(struct chunk));
+		get_chunk(new_IDAT, sample, 1);
+
+		//Inflate received IDAT data
+		U8* inflated_data = malloc(new_IDAT->length)
+		U64 len_inf = 0;
+		U64 src_length = new_IDAT->length;
+		mem_inf(inflated_data, &len_inf, new_IDAT->p_data, src_length);
+
+		//Copy inflated data into proper place in memory
+		all_IDAT[pc->shared_buf->tail->buf.seq] = inflated_data;
+
+		//Pop the image read from the queue
 		Buffer_pop(pc->shared_buf);
 
+		//Increment number of images processed
+		pc->num_consumed++;
 
+		pthread_mutex_unlock(mutex);
+		sem_post(pc->shared_spaces);
 	}
 
 	return 0;
 }
-
-/*ALGORITHM:
-	For each image segment (1-50):
-		decrement items (if not 0, else wait until not 0)
-
-*/
 
 int producer(multipc* pc, int img_no) {
 	printf("Producer working!\n");
