@@ -29,7 +29,7 @@ typedef struct DingLirenWC {
 	int num_consumed;
 } multipc;
 
-int consumer(multipc* pc, struct chunk** all_IDAT);
+int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time);
 int producer(multipc* pc);
 
 int main(int argc, char** argv) {
@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
 			multipc* shared_multipc = (multipc*) multipc_tmp;
 			struct chunk** shared_IDAT = (struct chunk**) IDAT_tmp;
 			/*perform all consumer work here*/
-			consumer(shared_multipc, shared_IDAT);
+			consumer(shared_multipc, shared_IDAT, sleep_time);
 			if (shmdt(multipc_tmp) != 0 || shmdt(IDAT_tmp) != 0) {
 				perror("shmdt");
 				abort();
@@ -169,11 +169,28 @@ int main(int argc, char** argv) {
 	Output all.png when done
 */
 
-int consumer(multipc* pc, struct chunk** all_IDAT) {
+int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 	printf("Consumer working!\n");
 
-	while(pc->num_consumed < 50) {
-		//
+	pthread_mutex_lock(mutex);
+	int num_consumed = pc->num_consumed;	//will this temp variable change before while loop?
+	pthread_mutex_unlock(mutex);
+
+	while(num_consumed < 50) {
+
+		wait(pc->shared_spaces);
+
+		pthread_mutex_lock(mutex);
+
+		//sleep for specified amount of s = ms/1000
+		sleep(sleep_time / 1000);
+
+		//read image segments out of buffer into IDAT chunk array
+		// = pc->shared_buf->tail->buf
+
+		//pop the image read (tail) from buffer
+		Buffer_pop(pc->shared_buf);
+
 
 	}
 
