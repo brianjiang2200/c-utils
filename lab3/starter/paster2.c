@@ -14,6 +14,8 @@
 #include "catpng.h"
 #include "main_write_header_cb.h"
 #include "buffer.h"
+#include "zutil.h"
+#include "lab_png.h"
 
 #define IMG_URL "http://ece252-1.uwaterloo.ca:2530/image?img="
 #define ECE252_HEADER "X-Ece252-Fragment: "
@@ -55,7 +57,7 @@ int main(int argc, char** argv) {
 	int sleep_time = strtoul(argv[4], NULL, 10);
 	int img_no = strtoul(argv[5], NULL, 10);
 
-	curl_global_init(CURL_GLOBAL_DEFAULT):
+	curl_global_init(CURL_GLOBAL_DEFAULT);
 
 	/*array of inflated IDAT data*/
 	int IDAT_shmid = shmget(IPC_PRIVATE, 50 * sizeof(struct chunk*), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
@@ -95,7 +97,7 @@ int main(int argc, char** argv) {
                                 shared_multipc->num_consumed = 0;
 			}
 			/*perform all producer work here*/
-			producer(shared_multipc);	//ADD IMG_NO
+			producer(shared_multipc, img_no);
 			if (shmdt(multipc_tmp) != 0) {
 				perror("shmdt");
 				abort();
@@ -174,15 +176,15 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 
 	while(pc->num_consumed < 50) {
 		sem_wait(pc->shared_items);
-		pthread_mutex_lock(mutex);
+		pthread_mutex_lock(pc->shared_mutex);
 
 		//Sleep for specified amount of time
 		sleep(sleep_time / 1000);
 
 		//Create the image segment PNG file
 		char fname[20];
-		sprintf(fname, "output_%d.png", pc->shared_buf->tail->buf.seq);
-		write_file(fname, pc->shared_buf->tail->buf.buf, pc->shared_buf->tail->buf.size);
+		sprintf(fname, "output_%d.png", pc->shared_buf->tail->buf->seq);
+		write_file(fname, pc->shared_buf->tail->buf->buf, pc->shared_buf->tail->buf->size);
 
 		//Open PNG file for reading
 		FILE* sample = fopen(fname, "r");
@@ -192,8 +194,9 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		fread(header, 8, 1, sample);
 
 		//Validate the received image segment
-		if(is_png(header)) {
+		if(is_png(header, 8)) {
 			perror("is_png");
+			return -1;
 		}
 
 		//Read IDAT
@@ -201,13 +204,18 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		get_chunk(new_IDAT, sample, 1);
 
 		//Inflate received IDAT data
-		U8* inflated_data = malloc(new_IDAT->length)
+		U8* inflated_data = malloc(new_IDAT->length);
 		U64 len_inf = 0;
 		U64 src_length = new_IDAT->length;
-		mem_inf(inflated_data, &len_inf, new_IDAT->p_data, src_length);
+		int ret = mem_inf(inflated_data, &len_inf, new_IDAT->p_data, src_length);
+		if (ret) {	/*failure*/
+			/*clean up*/
+			printf("Mem Inf Error: Return value %d\n", ret);
+			return ret;
+		}
 
 		//Copy inflated data into proper place in memory
-		all_IDAT[pc->shared_buf->tail->buf.seq] = inflated_data;
+		all_IDAT[pc->shared_buf->tail->buf->seq] = new_IDAT;	//NEEDS TO BE inflated_data
 
 		//Pop the image read from the queue
 		Buffer_pop(pc->shared_buf);
@@ -215,7 +223,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		//Increment number of images processed
 		pc->num_consumed++;
 
-		pthread_mutex_unlock(mutex);
+		pthread_mutex_unlock(pc->shared_mutex);
 		sem_post(pc->shared_spaces);
 	}
 
@@ -238,11 +246,11 @@ int producer(multipc* pc, int img_no) {
 		RECV_BUF recv_buf;
 		recv_buf_init(&recv_buf, 10000);
 		char url[64];
-		sprintf(url, "%s%d&part=%d", IMG_URL, img_no, num_produced);
+		sprintf(url, "%s%d&part=%d", IMG_URL, img_no, pc->num_produced);
 
-		curl_easy_setopt(curl_handle, CURL_URL, url);
+		curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 		curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&recv_buf);
-		curl_easy_setopt(curl_handle, CURL_HEADERDATA, (void*)&recv_buf);
+		curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void*)&recv_buf);
 
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
@@ -253,9 +261,9 @@ int producer(multipc* pc, int img_no) {
 
 		sem_wait(pc->shared_spaces);
 		pthread_mutex_lock(pc->shared_mutex);
-		buffer_add(pc->shared_buf, &recv_buf);
+		Buffer_add(pc->shared_buf, &recv_buf);
 		pthread_mutex_unlock(pc->shared_mutex);
-		sem_post(&items);
+		sem_post(pc->shared_items);
 
 		pc->num_produced++;
 	}
