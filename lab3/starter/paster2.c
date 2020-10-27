@@ -18,9 +18,6 @@
 #define IMG_URL "http://ece252-1.uwaterloo.ca:2530/image?img="
 #define ECE252_HEADER "X-Ece252-Fragment: "
 
-int consumer(multipc* pc);
-int producer(multipc* pc);
-
 typedef struct DingLirenWC {
 	Buffer* shared_buf;
 	sem_t* shared_spaces;
@@ -29,6 +26,9 @@ typedef struct DingLirenWC {
 	int cindex;
 	pthread_mutex_t* shared_mutex;
 } multipc;
+
+int consumer(multipc* pc);
+int producer(multipc* pc);
 
 int main(int argc, char** argv) {
 
