@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <curl/curl.h>
+#include <semaphore.h>
 #include "catpng.h"
 #include "main_write_header_cb.h"
 #include "buffer.h"
@@ -16,8 +17,8 @@
 #define IMG_URL "http://ece252-1.uwaterloo.ca:2530/image?img="
 #define ECE252_HEADER "X-Ece252-Fragment: "
 
-int consumer();
-int producer();
+int consumer(Buffer* b, sem_t sem);
+int producer(Buffer* b, sem_t sem);
 
 int main(int argc, char** argv) {
 
@@ -50,6 +51,12 @@ int main(int argc, char** argv) {
 		perror("shmget");
 		abort();
 	}
+	/*Global Buffer Semaphore*/
+	int sem_shmid = shmget(IPC_PRIVATE, sizeof(sem_t), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+	if (sem_shmid == -1) {
+		perror("shmget");
+		abort();
+	}
 
 	/*Do work here*/
 	/*Initialize producer processes*/
@@ -60,19 +67,26 @@ int main(int argc, char** argv) {
 			abort();
 		} else if (prod_ids[i] == 0) {
 			/*generate shared memory segments*/
-			void *tmp = shmat(buf_shmid, NULL, 0);
-			if (tmp == (void*) -1 ) {
+			void *buf_tmp = shmat(buf_shmid, NULL, 0);
+			if (buf_tmp == (void*) -1 ) {
 				perror("shmat");
 				abort();
 			}
-			Buffer* shared_buf = (Buffer*) tmp;
-			/*Must init shared buffer prior to first work*/
+			Buffer* shared_buf = (Buffer*) buf_tmp;
+			void *sem_tmp = shmat(sem_shmid, NULL, 0);
+			if (sem_tmp == (void*) -1 ) {
+				perror("shmat");
+				abort();
+			}
+			sem_t* shared_sem = (sem_t*) sem_tmp;
+			/*Must init shared memory elements prior to work*/
 			if (i == 0) {
 				Buffer_init(shared_buf, buf_size);
+				sem_init(&(shared_sem), 1, 1);
 			}
 			/*perform all producer work here*/
-			producer();
-			if (shmdt(tmp) != 0) {
+			producer(shared_buf, NULL);
+			if (shmdt(buf_tmp) != 0) {
 				perror("shmdt");
 				abort();
 			}
@@ -87,15 +101,15 @@ int main(int argc, char** argv) {
 			abort();
 		} else if (cons_ids[i] == 0) {
 			/*generate shared memory segments*/
-			void *tmp = shmat(buf_shmid, NULL, 0);
-			if (tmp == (void*) -1 ) {
+			void *buf_tmp = shmat(buf_shmid, NULL, 0);
+			if (buf_tmp == (void*) -1 ) {
 				perror("shmat");
 				abort();
 			}
-			Buffer* shared_buf = (Buffer*) tmp;
+			Buffer* shared_buf = (Buffer*) buf_tmp;
 			/*perform all consumer work here*/
-			consumer();
-			if (shmdt(tmp) != 0) {
+			consumer(shared_buf, NULL);
+			if (shmdt(buf_tmp) != 0) {
 				perror("shmdt");
 				abort();
 			}
@@ -142,12 +156,12 @@ int main(int argc, char** argv) {
 	Output all.png when done
 */
 
-int consumer() {
+int consumer(Buffer* b, sem_t sem) {
 	printf("Consumer working!\n");
 	return 0;
 }
 
-int producer() {
+int producer(Buffer* b, sem_t sem) {
 	printf("Producer working!\n");
 	return 0;
 }
