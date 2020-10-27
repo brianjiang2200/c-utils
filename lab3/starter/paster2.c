@@ -212,6 +212,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 //CRITICAL PROCESS 0
 	pthread_mutex_lock(&pc->shared_mutex);
 	int k = pc->num_consumed;
+	pc->num_consumed++;
 	pthread_mutex_unlock(&pc->shared_mutex);
 //END OF CRITICAL PROCESS 0
 
@@ -224,6 +225,8 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 
 		//If > 0, decrement and execute. If 0, wait until item exists
 		sem_wait(&pc->shared_items);
+
+		puts("test_consumer2");
 
 //CRITICAL PROCESS 1
 		pthread_mutex_lock(&pc->shared_mutex);
@@ -276,8 +279,8 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		Buffer_pop(pc->shared_buf);
 
 		//Increment number of images processed
-		pc->num_consumed++;
 		k = pc->num_consumed;
+		pc->num_consumed++;
 
 //END OF CRITICAL PROCESS 2
 		pthread_mutex_unlock(&pc->shared_mutex);
@@ -303,6 +306,7 @@ int producer(multipc* pc, int img_no) {
 
 	pthread_mutex_lock(&pc->shared_mutex);
 	int k = pc->num_produced;
+	pc->num_produced++;
 	pthread_mutex_unlock(&pc->shared_mutex);
 
 	while(k < 50) {
@@ -325,11 +329,14 @@ int producer(multipc* pc, int img_no) {
 		}
 
 		sem_wait(&pc->shared_spaces);
+
+		puts("test_producer2");
+
 		pthread_mutex_lock(&pc->shared_mutex);
 		Buffer_add(pc->shared_buf, &recv_buf);
 
-		pc->num_produced++;
 		k = pc->num_produced;
+		pc->num_produced++;
 		pthread_mutex_unlock(&pc->shared_mutex);
 		sem_post(&pc->shared_items);
 	}
