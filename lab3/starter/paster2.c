@@ -26,8 +26,6 @@ typedef struct DingLirenWC {
 	Buffer* shared_buf;
 	sem_t shared_spaces;
 	sem_t shared_items;
-	int pindex;
-	int cindex;
 	pthread_mutex_t shared_mutex;
 	int num_produced;
 	int num_consumed;
@@ -81,8 +79,6 @@ int main(int argc, char** argv) {
 	sem_init(&(deleted_multipc->shared_spaces), 0, buf_size);
 	sem_init(&(deleted_multipc->shared_items), 0, 0);
 	pthread_mutex_init(&(deleted_multipc->shared_mutex), NULL);
-	deleted_multipc->pindex = 0;
-	deleted_multipc->cindex = 0;
 	deleted_multipc->num_produced = 0;
 	deleted_multipc->num_consumed = 0;
 	if (shmdt(multipc_dummy) != 0) {
@@ -135,7 +131,10 @@ int main(int argc, char** argv) {
 			multipc* shared_multipc = (multipc*) multipc_tmp;
 			struct chunk** shared_IDAT = (struct chunk**) IDAT_tmp;
 			/*perform all consumer work here*/
-			consumer(shared_multipc, shared_IDAT, sleep_time);
+			if(consumer(shared_multipc, shared_IDAT, sleep_time) != 0) {
+				printf("Consumer failed\n");
+				return -1;
+			}
 			if (shmdt(multipc_tmp) != 0 || shmdt(IDAT_tmp) != 0) {
 				perror("shmdt");
 				abort();
@@ -218,15 +217,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 
 	while(k < 50) {
 
-		puts("test_consumer");
-
-		//Sleep for specified amount of time
-		usleep(sleep_time * 1000);
-
-		//If > 0, decrement and execute. If 0, wait until item exists
-		sem_wait(&pc->shared_items);
-
-		puts("test_consumer2");
+		printf("inside consumer while loop (k: %d)\n", k);
 
 //CRITICAL PROCESS 1
 		pthread_mutex_lock(&pc->shared_mutex);
@@ -236,8 +227,8 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		sprintf(fname, "output_%d.png", pc->shared_buf->tail->buf->seq);
 		write_file(fname, pc->shared_buf->tail->buf->buf, pc->shared_buf->tail->buf->size);
 
-//END OF CRITICAL PROCESS 1
 		pthread_mutex_unlock(&pc->shared_mutex);
+//END OF CRITICAL PROCESS 1
 
 		//Open PNG file for reading
 		FILE* sample = fopen(fname, "r");
@@ -261,13 +252,21 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		U64 len_inf = 0;
 		U64 src_length = new_IDAT->length;
 		int ret = mem_inf(inflated_data, &len_inf, new_IDAT->p_data, src_length);
-		if (ret) {	/*failure*/
-			/*clean up*/
+		if (ret) {
 			printf("Mem Inf Error: Return value %d\n", ret);
 			return ret;
 		}
                 new_IDAT->p_data = inflated_data;
                 new_IDAT->length = len_inf;
+
+//WAIT (only lock and execute it there is item available, then decrement number of items)
+		sem_wait(&pc->shared_items);
+
+//TEST
+		puts("inside consumer wait");
+
+		//Sleep for specified amount of time
+		usleep(sleep_time * 1000);
 
 //CRITICAL PROCESS 2
 		pthread_mutex_lock(&pc->shared_mutex);
@@ -282,11 +281,11 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		k = pc->num_consumed;
 		pc->num_consumed++;
 
-//END OF CRITICAL PROCESS 2
 		pthread_mutex_unlock(&pc->shared_mutex);
+//END OF CRITICAL PROCESS 2
 
-		//Increments number of spaces
 		sem_post(&pc->shared_spaces);
+//POST (unlock and increment number of spaces)
 	}
 
 	return 0;
@@ -310,7 +309,8 @@ int producer(multipc* pc, int img_no) {
 	pthread_mutex_unlock(&pc->shared_mutex);
 
 	while(k < 50) {
-		puts("test_producer");
+//TEST
+		printf("inside producer while loop (k: %d)\n", k);
 
 		RECV_BUF recv_buf;
 		recv_buf_init(&recv_buf, 10000);
@@ -330,7 +330,7 @@ int producer(multipc* pc, int img_no) {
 
 		sem_wait(&pc->shared_spaces);
 
-		puts("test_producer2");
+		puts("inside producer wait");
 
 		pthread_mutex_lock(&pc->shared_mutex);
 		Buffer_add(pc->shared_buf, &recv_buf);
