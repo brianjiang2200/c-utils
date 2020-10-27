@@ -47,15 +47,19 @@ int main(int argc, char** argv) {
 	struct chunk** IDAT_arr = malloc(50 * sizeof(struct chunk*));
 	/*Fixed Size Global Buffer*/
 	int buf_shmid = shmget(IPC_PRIVATE, sizeof(Buffer), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
-	if (buf_shmid == -1) {
-		perror("shmget");
-		abort();
-	}
-	/*Global Buffer Semaphore*/
-	int sem_shmid = shmget(IPC_PRIVATE, sizeof(sem_t), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
-	if (sem_shmid == -1) {
-		perror("shmget");
-		abort();
+	/*Global Buffer Semaphores*/
+	int spaces_shmid = shmget(IPC_PRIVATE, sizeof(sem_t), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+	int items_shmid = shmget(IPC_PRIVATE, sizeof(sem_t), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+	/*Global Buffer Producer and Consumer Indices*/
+	int pindex_shmid = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+	int cindex_shmid = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+	/*Buffer Mutex*/
+	int mutex_shmid = shmget(IPC_PRIVATE, sizeof(pthread_mutex_t), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+	/*fail if error*/
+	if (buf_shmid == -1 || spaces_shmid == -1 || items_shmid == -1 ||
+		pindex_shmid == -1 || cindex_shmid == -1 || mutex_shmid == -1) {
+			perror("shmget");
+			abort();
 	}
 
 	/*Do work here*/
