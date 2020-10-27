@@ -214,7 +214,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		usleep(sleep_time * 1000);
 
 		//If > 0, decrement and execute. If 0, wait until item exists
-		sem_wait(pc->shared_items);
+		sem_wait(&pc->shared_items);
 
 //CRITICAL PROCESS 1
 		pthread_mutex_lock(pc->shared_mutex);
@@ -271,7 +271,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		pthread_mutex_unlock(pc->shared_mutex);
 
 		//Increments number of spaces
-		sem_post(pc->shared_spaces);
+		sem_post(&pc->shared_spaces);
 	}
 
 	return 0;
@@ -310,14 +310,14 @@ int producer(multipc* pc, int img_no) {
 			return -2;
 		}
 
-		sem_wait(pc->shared_spaces);
+		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(pc->shared_mutex);
 		Buffer_add(pc->shared_buf, &recv_buf);
 
 		pc->num_produced++;
 		k = pc->num_produced;
 		pthread_mutex_unlock(pc->shared_mutex);
-		sem_post(pc->shared_items);
+		sem_post(&pc->shared_items);
 	}
 	curl_easy_cleanup(curl_handle);
 
