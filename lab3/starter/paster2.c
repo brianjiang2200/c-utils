@@ -29,8 +29,13 @@ typedef struct DingLirenWC {
 	int num_consumed;
 } multipc;
 
+<<<<<<< HEAD
 int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time);
 int producer(multipc* pc);
+=======
+int consumer(multipc* pc, struct chunk** all_IDAT);
+int producer(multipc* pc, int img_no);
+>>>>>>> ebd184f574781ba6dce9ea7ef8be5e235955c618
 
 int main(int argc, char** argv) {
 
@@ -203,7 +208,44 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 
 */
 
-int producer(multipc* pc) {
+int producer(multipc* pc, int img_no) {
 	printf("Producer working!\n");
+	CURL *curl_handle;
+	curl_handle = curl_easy_init();
+	if (curl_handle == NULL) {
+		return -1;
+	}
+	CURLcode res;
+	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_cb_curl3);
+	curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_cb_curl);
+	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+
+	while(pc->num_produced < 50) {
+		RECV_BUF recv_buf;
+		recv_buf_init(&recv_buf, 10000);
+		char url[64];
+		sprintf(url, "%s%d&part=%d", IMG_URL, img_no, num_produced);
+
+		curl_easy_setopt(curl_handle, CURL_URL, url);
+		curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&recv_buf);
+		curl_easy_setopt(curl_handle, CURL_HEADERDATA, (void*)&recv_buf);
+
+		res = curl_easy_perform(curl_handle);
+		if (res != CURLE_OK) {
+			recv_buf_cleanup(&recv_buf);
+			curl_easy_cleanup(curl_handle);
+			return -2;
+		}
+
+		sem_wait(pc->shared_spaces);
+		pthread_mutex_lock(pc->shared_mutex);
+		buffer_add(pc->shared_buf, &recv_buf);
+		pthread_mutex_unlock(pc->shared_mutex);
+		sem_post(&items);
+
+		pc->num_produced++;
+	}
+	curl_easy_cleanup(curl_handle);
+
 	return 0;
 }
