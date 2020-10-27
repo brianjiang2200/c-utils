@@ -24,8 +24,8 @@
 
 typedef struct DingLirenWC {
 	Buffer* shared_buf;
-	sem_t* shared_spaces;
-	sem_t* shared_items;
+	sem_t shared_spaces;
+	sem_t shared_items;
 	int pindex;
 	int cindex;
 	pthread_mutex_t* shared_mutex;
@@ -78,8 +78,8 @@ int main(int argc, char** argv) {
 	}
 	multipc* deleted_multipc = (multipc*) multipc_dummy;
 	Buffer_init(deleted_multipc->shared_buf, buf_size);
-	sem_init(deleted_multipc->shared_spaces, 1, buf_size);
-	sem_init(deleted_multipc->shared_items, 1, 0);
+	sem_init(&(deleted_multipc->shared_spaces), 0, buf_size);
+	sem_init(&(deleted_multipc->shared_items), 0, 0);
 	pthread_mutex_init(deleted_multipc->shared_mutex, NULL);
 	deleted_multipc->pindex = 0;
 	deleted_multipc->cindex = 0;
