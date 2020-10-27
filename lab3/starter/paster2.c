@@ -28,7 +28,7 @@ typedef struct DingLirenWC {
 	sem_t shared_items;
 	int pindex;
 	int cindex;
-	pthread_mutex_t* shared_mutex;
+	pthread_mutex_t shared_mutex;
 	int num_produced;
 	int num_consumed;
 } multipc;
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
 	Buffer_init(deleted_multipc->shared_buf, buf_size);
 	sem_init(&(deleted_multipc->shared_spaces), 0, buf_size);
 	sem_init(&(deleted_multipc->shared_items), 0, 0);
-	pthread_mutex_init(deleted_multipc->shared_mutex, NULL);
+	pthread_mutex_init(&(deleted_multipc->shared_mutex), NULL);
 	deleted_multipc->pindex = 0;
 	deleted_multipc->cindex = 0;
 	deleted_multipc->num_produced = 0;
@@ -209,7 +209,13 @@ int main(int argc, char** argv) {
 int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 	printf("Consumer working!\n");
 
-	while(pc->num_consumed < 50) {
+//CRITICAL PROCESS 0
+	pthread_mutex_lock(&pc->shared_mutex);
+	int k = pc->num_consumed;
+	pthread_mutex_unlock(&pc->shared_mutex);
+//END OF CRITICAL PROCESS 0
+
+	while(k < 50) {
 		//Sleep for specified amount of time
 		usleep(sleep_time * 1000);
 
@@ -217,7 +223,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		sem_wait(&pc->shared_items);
 
 //CRITICAL PROCESS 1
-		pthread_mutex_lock(pc->shared_mutex);
+		pthread_mutex_lock(&pc->shared_mutex);
 
 		//Create the image segment PNG file
 		char fname[20];
@@ -225,7 +231,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		write_file(fname, pc->shared_buf->tail->buf->buf, pc->shared_buf->tail->buf->size);
 
 //END OF CRITICAL PROCESS 1
-		pthread_mutex_unlock(pc->shared_mutex);
+		pthread_mutex_unlock(&pc->shared_mutex);
 
 		//Open PNG file for reading
 		FILE* sample = fopen(fname, "r");
@@ -256,9 +262,10 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		}
 
 //CRITICAL PROCESS 2
-		pthread_mutex_lock(pc->shared_mutex);
+		pthread_mutex_lock(&pc->shared_mutex);
 
 		//Copy inflated data into proper place in memory
+		//cont...
 		all_IDAT[pc->shared_buf->tail->buf->seq] = new_IDAT;	//NEEDS TO BE inflated_data
 
 		//Pop the image read from the queue
@@ -266,9 +273,10 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 
 		//Increment number of images processed
 		pc->num_consumed++;
+		k = pc->num_consumed;
 
 //END OF CRITICAL PROCESS 2
-		pthread_mutex_unlock(pc->shared_mutex);
+		pthread_mutex_unlock(&pc->shared_mutex);
 
 		//Increments number of spaces
 		sem_post(&pc->shared_spaces);
@@ -289,9 +297,9 @@ int producer(multipc* pc, int img_no) {
 	curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_cb_curl);
 	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
-	pthread_mutex_lock(pc->shared_mutex);
+	pthread_mutex_lock(&pc->shared_mutex);
 	int k = pc->num_produced;
-	pthread_mutex_unlock(pc->shared_mutex);
+	pthread_mutex_unlock(&pc->shared_mutex);
 
 	while(k < 50) {
 		RECV_BUF recv_buf;
@@ -311,12 +319,12 @@ int producer(multipc* pc, int img_no) {
 		}
 
 		sem_wait(&pc->shared_spaces);
-		pthread_mutex_lock(pc->shared_mutex);
+		pthread_mutex_lock(&pc->shared_mutex);
 		Buffer_add(pc->shared_buf, &recv_buf);
 
 		pc->num_produced++;
 		k = pc->num_produced;
-		pthread_mutex_unlock(pc->shared_mutex);
+		pthread_mutex_unlock(&pc->shared_mutex);
 		sem_post(&pc->shared_items);
 	}
 	curl_easy_cleanup(curl_handle);
