@@ -17,8 +17,8 @@
 #define IMG_URL "http://ece252-1.uwaterloo.ca:2530/image?img="
 #define ECE252_HEADER "X-Ece252-Fragment: "
 
-int consumer(Buffer* b, sem_t sem);
-int producer(Buffer* b, sem_t sem);
+int consumer(Buffer* b, sem_t* sem);
+int producer(Buffer* b, sem_t* sem);
 
 int main(int argc, char** argv) {
 
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 			/*Must init shared memory elements prior to work*/
 			if (i == 0) {
 				Buffer_init(shared_buf, buf_size);
-				sem_init(&(shared_sem), 1, 1);
+				sem_init(shared_sem, 1, 1);
 			}
 			/*perform all producer work here*/
 			producer(shared_buf, NULL);
@@ -156,12 +156,12 @@ int main(int argc, char** argv) {
 	Output all.png when done
 */
 
-int consumer(Buffer* b, sem_t sem) {
+int consumer(Buffer* b, sem_t* sem) {
 	printf("Consumer working!\n");
 	return 0;
 }
 
-int producer(Buffer* b, sem_t sem) {
+int producer(Buffer* b, sem_t* sem) {
 	printf("Producer working!\n");
 	return 0;
 }
