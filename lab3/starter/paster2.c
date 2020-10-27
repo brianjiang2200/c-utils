@@ -70,6 +70,25 @@ int main(int argc, char** argv) {
 		perror("shmget");
 		abort();
 	}
+	/*Must init shared memory elements prior to any processes are generated*/
+	void *multipc_dummy = shmat(multipc_shmid, NULL, 0);
+	if (multipc_dummy == (void*)-1) {
+		perror("shmat");
+		abort();
+	}
+	multipc* deleted_multipc = (multipc*) multipc_dummy;
+	Buffer_init(deleted_multipc->shared_buf, buf_size);
+	sem_init(deleted_multipc->shared_spaces, 1, buf_size);
+	sem_init(deleted_multipc->shared_items, 1, 0);
+	pthread_mutex_init(deleted_multipc->shared_mutex, NULL);
+	deleted_multipc->pindex = 0;
+	deleted_multipc->cindex = 0;
+	deleted_multipc->num_produced = 0;
+	deleted_multipc->num_consumed = 0;
+	if (shmdt(multipc_dummy) != 0) {
+		perror("shmdt");
+		abort();
+	}
 
 	/*Do work here*/
 	/*Initialize producer processes*/
@@ -87,17 +106,6 @@ int main(int argc, char** argv) {
 				abort();
 			}
 			multipc* shared_multipc = (multipc*) multipc_tmp;
-			/*Must init shared memory elements prior to work*/
-			if (i == 0) {
-				Buffer_init(shared_multipc->shared_buf, buf_size);
-				sem_init(shared_multipc->shared_spaces, 1, buf_size);
-				sem_init(shared_multipc->shared_items, 1, 0);
-				pthread_mutex_init(shared_multipc->shared_mutex, NULL);
-				shared_multipc->pindex = 0;
-				shared_multipc->cindex = 0;
-				shared_multipc->num_produced = 0;
-                                shared_multipc->num_consumed = 0;
-			}
 			/*perform all producer work here*/
 			if (producer(shared_multipc, img_no) != 0) {
 				printf("Producer failed\n");
@@ -141,9 +149,11 @@ int main(int argc, char** argv) {
 	pid_t pid;
 	for (int i = 0; i < no_producers; ++i) {
 		pid = wait(&status);
+		printf("%d exited with status: %d\n", pid, status);
 	}
 	for (int i = 0; i < no_consumers; ++i) {
 		pid = wait(&status);
+		printf("%d exited with status: %d\n", pid, status);
 	}
 
 	/*Initialize all.png chunks after work has been performed*/
