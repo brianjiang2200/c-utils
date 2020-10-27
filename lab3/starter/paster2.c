@@ -1,3 +1,5 @@
+#define _DEFAULT_SOURCE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -143,6 +145,11 @@ int main(int argc, char** argv) {
 
 	/*Initialize all.png chunks after work has been performed*/
 
+	/*Clean up Shared Mem Segments*/
+	if (shmctl(IDAT_shmid, IPC_RMID, NULL) == -1 || shmctl(multipc_shmid, IPC_RMID, NULL) == -1 ) {
+		perror("shmctl");
+		abort();
+	}
 
 	/*record time after all.png is output*/
 	if (gettimeofday(&tv, NULL) != 0) {
@@ -175,11 +182,11 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 	printf("Consumer working!\n");
 
 	while(pc->num_consumed < 50) {
+		//Sleep for specified amount of time
+		usleep(sleep_time * 1000);
+
 		sem_wait(pc->shared_items);
 		pthread_mutex_lock(pc->shared_mutex);
-
-		//Sleep for specified amount of time
-		sleep(sleep_time / 1000);
 
 		//Create the image segment PNG file
 		char fname[20];
@@ -204,7 +211,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		get_chunk(new_IDAT, sample, 1);
 
 		//Inflate received IDAT data
-		U8* inflated_data = malloc(new_IDAT->length);
+		U8* inflated_data = malloc(30 * new_IDAT->length);
 		U64 len_inf = 0;
 		U64 src_length = new_IDAT->length;
 		int ret = mem_inf(inflated_data, &len_inf, new_IDAT->p_data, src_length);
@@ -242,11 +249,15 @@ int producer(multipc* pc, int img_no) {
 	curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_cb_curl);
 	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
-	while(pc->num_produced < 50) {
+	pthread_mutex_lock(pc->shared_mutex);
+	int k = pc->num_produced;
+	pthread_mutex_unlock(pc->shared_mutex);
+
+	while(k < 50) {
 		RECV_BUF recv_buf;
 		recv_buf_init(&recv_buf, 10000);
 		char url[64];
-		sprintf(url, "%s%d&part=%d", IMG_URL, img_no, pc->num_produced);
+		sprintf(url, "%s%d&part=%d", IMG_URL, img_no, k);
 
 		curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 		curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&recv_buf);
@@ -262,10 +273,11 @@ int producer(multipc* pc, int img_no) {
 		sem_wait(pc->shared_spaces);
 		pthread_mutex_lock(pc->shared_mutex);
 		Buffer_add(pc->shared_buf, &recv_buf);
-		pthread_mutex_unlock(pc->shared_mutex);
-		sem_post(pc->shared_items);
 
 		pc->num_produced++;
+		k = pc->num_produced;
+		pthread_mutex_unlock(pc->shared_mutex);
+		sem_post(pc->shared_items);
 	}
 	curl_easy_cleanup(curl_handle);
 
