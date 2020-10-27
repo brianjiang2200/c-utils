@@ -18,8 +18,8 @@
 #define IMG_URL "http://ece252-1.uwaterloo.ca:2530/image?img="
 #define ECE252_HEADER "X-Ece252-Fragment: "
 
-int consumer(Buffer* b, sem_t* sem);
-int producer(Buffer* b, sem_t* sem);
+int consumer(multipc* pc);
+int producer(multipc* pc);
 
 typedef struct DingLirenWC {
 	Buffer* shared_buf;
@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
 				shared_multipc->cindex = 0;
 			}
 			/*perform all producer work here*/
-			producer(shared_multipc->shared_buf, NULL);
+			producer(shared_multipc);
 			if (shmdt(multipc_tmp) != 0) {
 				perror("shmdt");
 				abort();
@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
 			}
 			multipc* shared_multipc = (multipc*) multipc_tmp;
 			/*perform all consumer work here*/
-			consumer(shared_multipc->shared_buf, NULL);
+			consumer(shared_multipc);
 			if (shmdt(multipc_tmp) != 0) {
 				perror("shmdt");
 				abort();
@@ -160,12 +160,12 @@ int main(int argc, char** argv) {
 	Output all.png when done
 */
 
-int consumer(Buffer* b, sem_t* sem) {
+int consumer(multipc* pc) {
 	printf("Consumer working!\n");
 	return 0;
 }
 
-int producer(Buffer* b, sem_t* sem) {
+int producer(multipc* pc) {
 	printf("Producer working!\n");
 	return 0;
 }
