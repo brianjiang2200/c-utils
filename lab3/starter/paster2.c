@@ -20,6 +20,15 @@
 int consumer(Buffer* b, sem_t* sem);
 int producer(Buffer* b, sem_t* sem);
 
+typedef struct DingLirenWC {
+	Buffer* shared_buf;
+	sem_t* shared_spaces;
+	sem_t* shared_items;
+	int pindex;
+	int cindex;
+	pthread_mutex_t shared_mutex;
+} multipc;
+
 int main(int argc, char** argv) {
 
 	if (argc < 6) {
@@ -45,21 +54,12 @@ int main(int argc, char** argv) {
 
 	/*array of inflated IDAT data*/
 	struct chunk** IDAT_arr = malloc(50 * sizeof(struct chunk*));
-	/*Fixed Size Global Buffer*/
-	int buf_shmid = shmget(IPC_PRIVATE, sizeof(Buffer), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
-	/*Global Buffer Semaphores*/
-	int spaces_shmid = shmget(IPC_PRIVATE, sizeof(sem_t), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
-	int items_shmid = shmget(IPC_PRIVATE, sizeof(sem_t), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
-	/*Global Buffer Producer and Consumer Indices*/
-	int pindex_shmid = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
-	int cindex_shmid = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
-	/*Buffer Mutex*/
-	int mutex_shmid = shmget(IPC_PRIVATE, sizeof(pthread_mutex_t), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+	/*Init all required shared multipc elements*/
+	int multipc_shmid = shmget(IPC_PRIVATE, sizeof(multipc), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 	/*fail if error*/
-	if (buf_shmid == -1 || spaces_shmid == -1 || items_shmid == -1 ||
-		pindex_shmid == -1 || cindex_shmid == -1 || mutex_shmid == -1) {
-			perror("shmget");
-			abort();
+	if (multipc_shmid == -1) {
+		perror("shmget");
+		abort();
 	}
 
 	/*Do work here*/
@@ -71,26 +71,20 @@ int main(int argc, char** argv) {
 			abort();
 		} else if (prod_ids[i] == 0) {
 			/*generate shared memory segments*/
-			void *buf_tmp = shmat(buf_shmid, NULL, 0);
-			if (buf_tmp == (void*) -1 ) {
+			void *multipc_tmp = shmat(multipc_shmid, NULL, 0);
+			/*fail if error*/
+			if (multipc_tmp == (void*)-1) {
 				perror("shmat");
 				abort();
 			}
-			Buffer* shared_buf = (Buffer*) buf_tmp;
-			void *sem_tmp = shmat(sem_shmid, NULL, 0);
-			if (sem_tmp == (void*) -1 ) {
-				perror("shmat");
-				abort();
-			}
-			sem_t* shared_sem = (sem_t*) sem_tmp;
+			multipc* shared_multipc = (multipc*) multipc_tmp;
 			/*Must init shared memory elements prior to work*/
 			if (i == 0) {
-				Buffer_init(shared_buf, buf_size);
-				sem_init(shared_sem, 1, 1);
+				Buffer_init(shared_multipc->shared_buf, buf_size);
 			}
 			/*perform all producer work here*/
-			producer(shared_buf, NULL);
-			if (shmdt(buf_tmp) != 0) {
+			producer(shared_multipc->shared_buf, NULL);
+			if (shmdt(multipc_tmp) != 0) {
 				perror("shmdt");
 				abort();
 			}
@@ -105,15 +99,15 @@ int main(int argc, char** argv) {
 			abort();
 		} else if (cons_ids[i] == 0) {
 			/*generate shared memory segments*/
-			void *buf_tmp = shmat(buf_shmid, NULL, 0);
-			if (buf_tmp == (void*) -1 ) {
+			void* multipc_tmp = shmat(multipc_shmid, NULL, 0);
+			if (multipc_tmp == (void*) -1 ) {
 				perror("shmat");
 				abort();
 			}
-			Buffer* shared_buf = (Buffer*) buf_tmp;
+			multipc* shared_multipc = (multipc*) multipc_tmp;
 			/*perform all consumer work here*/
-			consumer(shared_buf, NULL);
-			if (shmdt(buf_tmp) != 0) {
+			consumer(shared_multipc->shared_buf, NULL);
+			if (shmdt(multipc_tmp) != 0) {
 				perror("shmdt");
 				abort();
 			}
