@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <curl/curl.h>
+#include <pthread.h>
 #include <semaphore.h>
 #include "catpng.h"
 #include "main_write_header_cb.h"
@@ -26,7 +27,7 @@ typedef struct DingLirenWC {
 	sem_t* shared_items;
 	int pindex;
 	int cindex;
-	pthread_mutex_t shared_mutex;
+	pthread_mutex_t* shared_mutex;
 } multipc;
 
 int main(int argc, char** argv) {
@@ -81,6 +82,11 @@ int main(int argc, char** argv) {
 			/*Must init shared memory elements prior to work*/
 			if (i == 0) {
 				Buffer_init(shared_multipc->shared_buf, buf_size);
+				sem_init(shared_multipc->shared_spaces, 0, buf_size);
+				sem_init(shared_multipc->shared_items, 0, 0);
+				pthread_mutex_init(shared_multipc->shared_mutex, NULL);
+				shared_multipc->pindex = 0;
+				shared_multipc->cindex = 0;
 			}
 			/*perform all producer work here*/
 			producer(shared_multipc->shared_buf, NULL);
