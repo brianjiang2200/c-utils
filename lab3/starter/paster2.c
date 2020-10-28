@@ -334,6 +334,9 @@ int producer(multipc* pc, int img_no) {
 		sem_wait(&pc->shared_spaces);
 
 		pthread_mutex_lock(&pc->shared_mutex);
+		if (pc->shared_buf == NULL) {
+			puts("prod: buf is null");
+		}
 		Buffer_add(pc->shared_buf, &recv_buf);
 		printf("added img %d to the buffer\n", k);
 
