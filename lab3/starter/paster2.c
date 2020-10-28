@@ -23,7 +23,7 @@
 #define ECE252_HEADER "X-Ece252-Fragment: "
 
 typedef struct DingLirenWC {
-	Buffer* shared_buf;
+	Buffer shared_buf;
 	sem_t shared_spaces;
 	sem_t shared_items;
 	pthread_mutex_t shared_mutex;
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
 		abort();
 	}
 	multipc* deleted_multipc = (multipc*) multipc_dummy;
-	Buffer_init(deleted_multipc->shared_buf, buf_size);
+	Buffer_init(&deleted_multipc->shared_buf, buf_size);
 	sem_init(&(deleted_multipc->shared_spaces), 1, buf_size);
 	sem_init(&(deleted_multipc->shared_items), 1, 0);
 	pthread_mutex_init(&(deleted_multipc->shared_mutex), NULL);
@@ -220,19 +220,10 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		printf("consumer %d got the go ahead\n", k);
 //CRITICAL PROCESS 1
 		pthread_mutex_lock(&pc->shared_mutex);
-		if (pc->shared_buf == NULL) {
-			puts("buf is null");
-		}
-		else if (pc->shared_buf->tail == NULL) {
-			puts("tail is null");
-		}
-		else if (pc->shared_buf->tail->buf == NULL) {
-			puts("buffer is empty");
-		}
 		//Create the image segment PNG file
 		char fname[20];
-		sprintf(fname, "output_%d.png", pc->shared_buf->tail->buf->seq);
-		write_file(fname, pc->shared_buf->tail->buf->buf, pc->shared_buf->tail->buf->size);
+		sprintf(fname, "output_%d.png", pc->shared_buf.tail->buf->seq);
+		write_file(fname, pc->shared_buf.tail->buf->buf, pc->shared_buf.tail->buf->size);
 		pthread_mutex_unlock(&pc->shared_mutex);
 //END OF CRITICAL PROCESS 1
 
@@ -277,10 +268,10 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		pthread_mutex_lock(&pc->shared_mutex);
 
 		//Copy inflated data into proper place in memory
-		all_IDAT[pc->shared_buf->tail->buf->seq] = new_IDAT;
+		all_IDAT[pc->shared_buf.tail->buf->seq] = new_IDAT;
 
 		//Pop the image read from the queue
-		Buffer_pop(pc->shared_buf);
+		Buffer_pop(&pc->shared_buf);
 		printf("consumed item %d from the buffer\n", k);
 		//Increment number of images processed
 		k = pc->num_consumed;
@@ -334,11 +325,9 @@ int producer(multipc* pc, int img_no) {
 		sem_wait(&pc->shared_spaces);
 
 		pthread_mutex_lock(&pc->shared_mutex);
-		if (pc->shared_buf == NULL) {
-			puts("prod: buf is null");
-		}
-		Buffer_add(pc->shared_buf, &recv_buf);
-		printf("added img %d to the buffer\n", k);
+
+		Buffer_add(&pc->shared_buf, &recv_buf);
+		printf("added img %d to the buffer: buffer size %d\n", k, pc->shared_buf.size);
 
 		k = pc->num_produced;
 		pc->num_produced++;

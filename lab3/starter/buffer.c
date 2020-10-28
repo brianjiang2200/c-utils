@@ -5,7 +5,7 @@
 
 void Buffer_init(Buffer* b, int max_size) {
 	if (b == NULL) {
-		b = malloc(sizeof(Buffer));
+		b = (Buffer*) malloc(sizeof(Buffer));
 	}
 	b->size = 0;
 	b->max_size = max_size;
