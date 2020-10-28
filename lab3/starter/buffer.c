@@ -41,6 +41,9 @@ void Buffer_pop(Buffer* b) {
 	if (b == NULL) {
 		return;
 	}
+	if (b->size == 1) {
+	 	b->head = NULL;
+	}
 	if (b->size > 0) {
 		Bnode* popped = b->tail;
 		b->tail = b->tail->next;

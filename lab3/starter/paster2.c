@@ -216,17 +216,23 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 
 	while(k < 50) {
 
-		printf("going to consume item %d from the buffer\n", k);
 		sem_wait(&pc->shared_items);
 		printf("consumer %d got the go ahead\n", k);
 //CRITICAL PROCESS 1
 		pthread_mutex_lock(&pc->shared_mutex);
-
+		if (pc->shared_buf == NULL) {
+			puts("buf is null");
+		}
+		else if (pc->shared_buf->tail == NULL) {
+			puts("tail is null");
+		}
+		else if (pc->shared_buf->tail->buf == NULL) {
+			puts("buffer is empty");
+		}
 		//Create the image segment PNG file
 		char fname[20];
 		sprintf(fname, "output_%d.png", pc->shared_buf->tail->buf->seq);
 		write_file(fname, pc->shared_buf->tail->buf->buf, pc->shared_buf->tail->buf->size);
-
 		pthread_mutex_unlock(&pc->shared_mutex);
 //END OF CRITICAL PROCESS 1
 
