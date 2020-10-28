@@ -25,8 +25,8 @@ void Buffer_add(Buffer* b, RECV_BUF* node) {
 	new_node->buf = node;
 	/*general case*/
 	if (b->size > 0) {
-		b->tail->next = new_node;
-		b->tail = new_node;
+		b->head->next = new_node;
+		b->head = new_node;
 	}
 	/*Buffer empty case*/
 	else if (b->size == 0) {
