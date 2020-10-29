@@ -200,10 +200,6 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 	pthread_mutex_lock(&pc->shared_mutex);
 	int k = pc->num_consumed;
 	pc->num_consumed++;
-
-	printf("CONSUMER: critical process 0 finished, k = %d\n", k);
-	printf("seq: %d\n", pc->shared_buf.tail->buf->seq);
-
 	pthread_mutex_unlock(&pc->shared_mutex);
 
 	while(k < 50) {

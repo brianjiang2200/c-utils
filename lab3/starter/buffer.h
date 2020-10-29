@@ -13,8 +13,9 @@ typedef struct Buffer
 {
 	int size;
 	int max_size;
-	Bnode* tail;
-	Bnode* head;
+	int front;
+	int rear;
+	RECV_BUF* queue;
 } Buffer;
 
 void Buffer_init(Buffer* b, int max_size);
