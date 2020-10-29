@@ -208,7 +208,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		printf("consumer %d got the go ahead\n", k);
 		pthread_mutex_lock(&pc->shared_mutex);
 		//Create the image segment PNG file
-		char fname[20];
+		char fname[32];
 		sprintf(fname, "output_%d.png", pc->shared_buf.tail->buf->seq);
 		write_file(fname, pc->shared_buf.tail->buf->buf, pc->shared_buf.tail->buf->size);
 		//pthread_mutex_unlock(&pc->shared_mutex);
