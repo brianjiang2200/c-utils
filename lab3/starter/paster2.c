@@ -207,10 +207,13 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		sem_wait(&pc->shared_items);
 		printf("CONSUMER: consumer %d got the go ahead\n", k);
 		pthread_mutex_lock(&pc->shared_mutex);
+
+		RECV_BUF* data = pc->shared_buf.queue[pc->shared_buf.rear];
+
 		//Create the image segment PNG file
 		char fname[32];
-		sprintf(fname, "output_%d.png", pc->shared_buf.tail->buf->seq);
-		write_file(fname, pc->shared_buf.tail->buf->buf, pc->shared_buf.tail->buf->size);
+		sprintf(fname, "output_%d.png", data->seq);
+		write_file(fname, data->buf, data->size);
 		//pthread_mutex_unlock(&pc->shared_mutex);
 
 		printf("CONSUMER: consumer %d finished critical process 1\n", k);
@@ -250,7 +253,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		//pthread_mutex_lock(&pc->shared_mutex);
 
 		//Copy inflated data into proper place in memory
-		all_IDAT[pc->shared_buf.tail->buf->seq] = new_IDAT;
+		all_IDAT[data->seq] = new_IDAT;
 
 		//Pop the image read from the queue
 		Buffer_pop(&pc->shared_buf);
@@ -305,7 +308,7 @@ int producer(multipc* pc, int img_no) {
 
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
-		Buffer_add(&pc->shared_buf, &recv_buf);
+		Buffer_add(&pc->shared_buf.queue, &recv_buf);
 		printf("PRODUCER: added img %d to the buffer: buffer size %d\n", k, pc->shared_buf.size);
 
 		k = pc->num_produced;
