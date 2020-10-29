@@ -221,6 +221,8 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 //CRITICAL PROCESS 1
 		pthread_mutex_lock(&pc->shared_mutex);
 
+		printf("seq: %d\n", pc->shared_buf.tail->buf->seq);
+
 		//Create the image segment PNG file
 		char fname[20];
 		sprintf(fname, "output_%d.png", pc->shared_buf.tail->buf->seq);
