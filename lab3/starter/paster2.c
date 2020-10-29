@@ -208,7 +208,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		printf("CONSUMER: consumer %d got the go ahead\n", k);
 		pthread_mutex_lock(&pc->shared_mutex);
 
-		RECV_BUF* data = pc->shared_buf.queue[pc->shared_buf.rear];
+		RECV_BUF* data = &pc->shared_buf.queue[pc->shared_buf.rear];
 
 		//Create the image segment PNG file
 		char fname[32];
@@ -308,13 +308,15 @@ int producer(multipc* pc, int img_no) {
 
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
-		Buffer_add(&pc->shared_buf.queue, &recv_buf);
+		Buffer_add(&pc->shared_buf, &recv_buf);
 		printf("PRODUCER: added img %d to the buffer: buffer size %d\n", k, pc->shared_buf.size);
 
 		k = pc->num_produced;
 		pc->num_produced++;
 		pthread_mutex_unlock(&pc->shared_mutex);
 		sem_post(&pc->shared_items);
+
+		recv_buf_cleanup(&recv_buf);
 
 	}
 	curl_easy_cleanup(curl_handle);
