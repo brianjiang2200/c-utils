@@ -211,27 +211,31 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 	pthread_mutex_lock(&pc->shared_mutex);
 	int k = pc->num_consumed;
 	pc->num_consumed++;
+
+	printf("CONSUMER: critical process 0 finished, k = %d\n", k);
+	printf("seq: %d\n", pc->shared_buf.tail->buf->seq);
+
 	pthread_mutex_unlock(&pc->shared_mutex);
 //END OF CRITICAL PROCESS 0
 
 	while(k < 50) {
 
 		sem_wait(&pc->shared_items);
-		printf("consumer %d got the go ahead\n", k);
+		printf("CONSUMER: consumer %d got the go ahead\n", k);
 //CRITICAL PROCESS 1
 		pthread_mutex_lock(&pc->shared_mutex);
 		//Create the image segment PNG file
 		char fname[20];
-		if (pc->shared_buf.tail == NULL) puts("Consumer: tail is NULL");
-		if (pc->shared_buf.tail->buf == NULL) puts("Consumer: recv_buf is NULL");
-		if (&pc->shared_buf.tail->buf->seq == NULL) puts("seq is null");
-		printf("%d\n", pc->shared_buf.tail->buf->seq);
+		if (pc->shared_buf.tail == NULL) puts("CONSUMER: Consumer: tail is NULL");
+		if (pc->shared_buf.tail->buf == NULL) puts("CONSUMER: Consumer: recv_buf is NULL");
+		if (&pc->shared_buf.tail->buf->seq == NULL) puts("CONSUMER: seq is null");
+		printf("CONSUMER: seq: %d\n", pc->shared_buf.tail->buf->seq);
 		sprintf(fname, "output_%d.png", pc->shared_buf.tail->buf->seq);
 		write_file(fname, pc->shared_buf.tail->buf->buf, pc->shared_buf.tail->buf->size);
 		//pthread_mutex_unlock(&pc->shared_mutex);
 //END OF CRITICAL PROCESS 1
 
-		printf("consumer %d finished process 1\n", k);
+		printf("CONSUMER: consumer %d finished critical process 1\n", k);
 		//Open PNG file for reading
 		FILE* sample = fopen(fname, "r");
 
@@ -260,7 +264,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		}
                 new_IDAT->p_data = inflated_data;
                 new_IDAT->length = len_inf;
-		printf("consumer %d successfully inflated data\n", k);
+		printf("CONSUMER: consumer %d successfully inflated data\n", k);
 
 //TEST
 
@@ -275,7 +279,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 
 		//Pop the image read from the queue
 		Buffer_pop(&pc->shared_buf);
-		printf("consumed item %d from the buffer\n", k);
+		printf("CONSUMER: consumed item %d from the buffer\n", k);
 		//Increment number of images processed
 		k = pc->num_consumed;
 		pc->num_consumed++;
@@ -323,12 +327,12 @@ int producer(multipc* pc, int img_no) {
 			curl_easy_cleanup(curl_handle);
 			return -2;
 		}
-		printf("going to add img %d to the buffer\n", k);
+		printf("PRODUCER: going to add img %d to the buffer\n", k);
 
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
 		Buffer_add(&pc->shared_buf, &recv_buf);
-		printf("added img %d to the buffer: buffer size %d\n", k, pc->shared_buf.size);
+		printf("PRODUCER: added img %d to the buffer: buffer size %d\n", k, pc->shared_buf.size);
 
 		k = pc->num_produced;
 		pc->num_produced++;
