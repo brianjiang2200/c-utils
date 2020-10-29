@@ -15,7 +15,7 @@ void Buffer_init(Buffer* b, int max_size) {
 		b->queue = malloc(max_size * sizeof(RECV_BUF));
 	}
 	for (int i = 0; i < max_size; ++i) {
-		recv_buf_init(&b->queue[i]);
+		recv_buf_init(&b->queue[i], 10000);
 	}
 }
 
@@ -30,16 +30,18 @@ void Buffer_add(Buffer* b, RECV_BUF* node) {
 	else if (b->front == -1) {
 		b->front = 0;
 		b->rear = 0;
-		memcpy(&b->queue[i], node, sizeof(RECV_BUF));
-		memcpy(&b->queue[i]->buf, node->buf, node->size);
+		memcpy(&b->queue[b->rear], node, sizeof(RECV_BUF));
+		memcpy(&b->queue[b->rear]->buf, node->buf, node->size);
 	}
 	else if (b->rear == b->max_size - 1 && b->front != 0) {
 		b->rear = 0;
-		b->queue[b->rear] = node;
+		memcpy(&b->queue[b->rear], node, sizeof(RECV_BUF));
+		memcpy(&b->queue[b->rear]->buf, node->buf, node->size);
 	}
 	else {
 		b->rear++;
-		b->queue[b->rear] = node;
+		memcpy(&b->queue[b->rear], node, sizeof(RECV_BUF));
+		memcpy(&b->queue[b->rear]->buf, node->buf, node->size);
 	}
 	b->size++;
 }
@@ -51,8 +53,6 @@ void Buffer_pop(Buffer* b) {
 	if (b->size == 0) {
 	 	return;
 	}
-	recv_buf_cleanup(b->queue[b->front]);
-	free(b->queue[b->front]);
 	b->queue[b->front] = (RECV_BUF) 0;
 	if (b->front == b->rear) {
 		b->front = -1;
@@ -70,7 +70,6 @@ void Buffer_clean(Buffer *b) {
 	for (int i = 0; i < b->max_size; ++i) {
 		if (b->queue[i] != (RECV_BUF) 0) {
 			recv_buf_cleanup(&b->queue[i]);
-			free(&b->queue[i]);
 			b->queue[i] = (RECV_BUF) 0;
 		}
 	}
