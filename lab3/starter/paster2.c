@@ -220,11 +220,12 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		printf("consumer %d got the go ahead\n", k);
 //CRITICAL PROCESS 1
 		pthread_mutex_lock(&pc->shared_mutex);
-
-		printf("seq: %d\n", pc->shared_buf.tail->buf->seq);
-
 		//Create the image segment PNG file
 		char fname[20];
+		if (pc->shared_buf.tail == NULL) puts("Consumer: tail is NULL");
+		if (pc->shared_buf.tail->buf == NULL) puts("Consumer: recv_buf is NULL");
+		if (&pc->shared_buf.tail->buf->seq == NULL) puts("seq is null");
+		printf("%d\n", pc->shared_buf.tail->buf->seq);
 		sprintf(fname, "output_%d.png", pc->shared_buf.tail->buf->seq);
 		write_file(fname, pc->shared_buf.tail->buf->buf, pc->shared_buf.tail->buf->size);
 		//pthread_mutex_unlock(&pc->shared_mutex);
