@@ -304,13 +304,12 @@ int producer(multipc* pc, int img_no) {
 			curl_easy_cleanup(curl_handle);
 			return -2;
 		}
-		printf("PRODUCER: going to add img %d to the buffer\n", k);
 
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
 		Buffer_add(&pc->shared_buf, &recv_buf);
-		printf("PRODUCER: added img %d to the buffer: buffer size %d\n", k, pc->shared_buf.size);
-
+		printf("PRODUCER: added img %d to the buffer: buffer size %d and seq num: %d\n", k, pc->shared_buf.size, recv_buf.seq);
+		printf("PRODUCER: seq number recieved: %d\n", pc->shared_buf.queue[pc->shared_buf.front].seq);
 		k = pc->num_produced;
 		pc->num_produced++;
 		pthread_mutex_unlock(&pc->shared_mutex);
