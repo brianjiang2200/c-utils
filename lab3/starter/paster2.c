@@ -60,28 +60,27 @@ int main(int argc, char** argv) {
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 
 	/*array of inflated IDAT data*/
-	int IDAT_shmid = shmget(IPC_PRIVATE, 50 * sizeof(struct chunk*), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+	int IDAT_shmid = shmget(IPC_PRIVATE, 50 * sizeof(struct chunk*), 0666 | IPC_CREAT);
 	/*Init all required shared multipc elements*/
-	int multipc_shmid = shmget(IPC_PRIVATE, sizeof(multipc), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+	int multipc_shmid = shmget(IPC_PRIVATE, sizeof(multipc), 0666 | IPC_CREAT);
 	/*fail if error*/
 	if (multipc_shmid == -1 || IDAT_shmid == -1) {
 		perror("shmget");
 		abort();
 	}
 	/*Must init shared memory elements prior to any processes are generated*/
-	void *multipc_dummy = shmat(multipc_shmid, NULL, 0);
-	if (multipc_dummy == (void*)-1) {
+	multipc* deleted_multipc = (multipc*) shmat(multipc_shmid, NULL, 0);
+	if (deleted_multipc == (multipc*)-1) {
 		perror("shmat");
 		abort();
 	}
-	multipc* deleted_multipc = (multipc*) multipc_dummy;
 	Buffer_init(&deleted_multipc->shared_buf, buf_size);
 	sem_init(&(deleted_multipc->shared_spaces), 1, buf_size);
 	sem_init(&(deleted_multipc->shared_items), 1, 0);
 	pthread_mutex_init(&(deleted_multipc->shared_mutex), NULL);
 	deleted_multipc->num_produced = 0;
 	deleted_multipc->num_consumed = 0;
-	if (shmdt(multipc_dummy) != 0) {
+	if (shmdt(deleted_multipc) != 0) {
 		perror("shmdt");
 		abort();
 	}
@@ -95,19 +94,18 @@ int main(int argc, char** argv) {
 			abort();
 		} else if (prod_ids[i] == 0) {
 			/*generate shared memory segments*/
-			void *multipc_tmp = shmat(multipc_shmid, NULL, 0);
+			multipc* shared_multipc = (multipc*) shmat(multipc_shmid, NULL, 0);
 			/*fail if error*/
-			if (multipc_tmp == (void*)-1) {
+			if (shared_multipc == (multipc*)-1) {
 				perror("shmat");
 				abort();
 			}
-			multipc* shared_multipc = (multipc*) multipc_tmp;
 			/*perform all producer work here*/
 			if (producer(shared_multipc, img_no) != 0) {
 				printf("Producer failed\n");
 				return -1;
 			}
-			if (shmdt(multipc_tmp) != 0) {
+			if (shmdt(shared_multipc) != 0) {
 				perror("shmdt");
 				abort();
 			}
@@ -122,20 +120,18 @@ int main(int argc, char** argv) {
 			abort();
 		} else if (cons_ids[i] == 0) {
 			/*generate shared memory segments*/
-			void* multipc_tmp = shmat(multipc_shmid, NULL, 0);
-			void* IDAT_tmp = shmat(IDAT_shmid, NULL, 0);
-			if (multipc_tmp == (void*) -1 || IDAT_tmp == (void*) -1) {
+			multipc* shared_multipc = (multipc*) shmat(multipc_shmid, NULL, 0);
+			struct chunk** shared_IDAT = (struct chunk**) shmat(IDAT_shmid, NULL, 0);
+			if (shared_multipc == (multipc*) -1 || shared_IDAT == (struct chunk**) -1) {
 				perror("shmat");
 				abort();
 			}
-			multipc* shared_multipc = (multipc*) multipc_tmp;
-			struct chunk** shared_IDAT = (struct chunk**) IDAT_tmp;
 			/*perform all consumer work here*/
 			if(consumer(shared_multipc, shared_IDAT, sleep_time) != 0) {
 				printf("Consumer failed\n");
 				return -1;
 			}
-			if (shmdt(multipc_tmp) != 0 || shmdt(IDAT_tmp) != 0) {
+			if (shmdt(shared_multipc) != 0 || shmdt(shared_IDAT) != 0) {
 				perror("shmdt");
 				abort();
 			}
@@ -156,18 +152,12 @@ int main(int argc, char** argv) {
 	}
 
 	/*Initialize all.png chunks after work has been performed*/
-	void* IDAT_tmp = shmat(IDAT_shmid, NULL, 0);
-	if (IDAT_tmp == (void*)-1) {
+	struct chunk** IDAT_arr = (struct chunk**) shmat(IDAT_shmid, NULL, 0);
+	if (IDAT_arr == (struct chunk**)-1) {
 		perror("shmat");
 		abort();
 	}
-	struct chunk** IDAT_arr = (struct chunk**) IDAT_tmp;
-	for (int i = 0; i < 50; ++i) {
-		if (IDAT_arr[i] != NULL) {
-			printf("IDAT %d length: %u\n", i, IDAT_arr[i]->length);
-		}
-	}
-	if (shmdt(IDAT_tmp) != 0) {
+	if (shmdt(IDAT_arr) != 0) {
 		perror("shmdt");
 		abort();
 	}
@@ -207,29 +197,21 @@ int main(int argc, char** argv) {
 
 int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 
-//CRITICAL PROCESS 0
 	pthread_mutex_lock(&pc->shared_mutex);
 	int k = pc->num_consumed;
 	pc->num_consumed++;
 	pthread_mutex_unlock(&pc->shared_mutex);
-//END OF CRITICAL PROCESS 0
 
 	while(k < 50) {
 
 		sem_wait(&pc->shared_items);
 		printf("consumer %d got the go ahead\n", k);
-//CRITICAL PROCESS 1
 		pthread_mutex_lock(&pc->shared_mutex);
 		//Create the image segment PNG file
 		char fname[20];
-		if (pc->shared_buf.tail == NULL) puts("Consumer: tail is NULL");
-		if (pc->shared_buf.tail->buf == NULL) puts("Consumer: recv_buf is NULL");
-		if (&pc->shared_buf.tail->buf->seq == NULL) puts("seq is null");
-		printf("%d\n", pc->shared_buf.tail->buf->seq);
 		sprintf(fname, "output_%d.png", pc->shared_buf.tail->buf->seq);
 		write_file(fname, pc->shared_buf.tail->buf->buf, pc->shared_buf.tail->buf->size);
 		//pthread_mutex_unlock(&pc->shared_mutex);
-//END OF CRITICAL PROCESS 1
 
 		printf("consumer %d finished process 1\n", k);
 		//Open PNG file for reading
@@ -262,12 +244,9 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
                 new_IDAT->length = len_inf;
 		printf("consumer %d successfully inflated data\n", k);
 
-//TEST
-
 		//Sleep for specified amount of time
 		usleep(sleep_time * 1000);
 
-//CRITICAL PROCESS 2
 		//pthread_mutex_lock(&pc->shared_mutex);
 
 		//Copy inflated data into proper place in memory
@@ -281,10 +260,9 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		pc->num_consumed++;
 
 		pthread_mutex_unlock(&pc->shared_mutex);
-//END OF CRITICAL PROCESS 2
 
 		sem_post(&pc->shared_spaces);
-//POST (unlock and increment number of spaces)
+		//POST (unlock and increment number of spaces)
 	}
 
 	return 0;
@@ -309,7 +287,7 @@ int producer(multipc* pc, int img_no) {
 	while(k < 50) {
 
 		RECV_BUF recv_buf;
-		recv_buf_init(&recv_buf, 10000);
+		if (recv_buf_init(&recv_buf, 10000) != 0) perror("recv_buf_init");
 		char url[64];
 		sprintf(url, "%s%d&part=%d", IMG_URL, img_no, k);
 
@@ -334,6 +312,7 @@ int producer(multipc* pc, int img_no) {
 		pc->num_produced++;
 		pthread_mutex_unlock(&pc->shared_mutex);
 		sem_post(&pc->shared_items);
+
 	}
 	curl_easy_cleanup(curl_handle);
 
