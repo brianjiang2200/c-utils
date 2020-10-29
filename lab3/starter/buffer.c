@@ -9,8 +9,11 @@ void Buffer_init(Buffer* b, int max_size) {
 	}
 	b->size = 0;
 	b->max_size = max_size;
-	b->tail = NULL;
-	b->head = NULL;
+	b->front = -1;
+	b->rear = -1;
+	if (queue == NULL) {
+		queue = malloc(max_size * sizeof(RECV_BUF));
+	}
 }
 
 void Buffer_add(Buffer* b, RECV_BUF* node) {
@@ -21,19 +24,19 @@ void Buffer_add(Buffer* b, RECV_BUF* node) {
 	if (b->size >= b->max_size) {
 		return;
 	}
-	Bnode* new_node = malloc(sizeof(Bnode));
-	new_node->buf = node;
-	/*general case*/
-	if (b->size > 0) {
-		b->head->next = new_node;
-		b->head = new_node;
+	else if (b->front == -1) {
+		b->front = 0;
+		b->rear = 0;
+		b->queue[rear] = node;
 	}
-	/*Buffer empty case*/
-	else if (b->size == 0) {
-		b->tail = new_node;
-		b->head = new_node;
+	else if (b->rear == b->max_size - 1 && b->front != 0) {
+		b->rear = 0;
+		b->queue[b->rear] = node;
 	}
-	new_node->next = NULL;
+	else {
+		b->rear++;
+		b->queue[b->rear] = node;
+	}
 	b->size++;
 }
 
@@ -41,33 +44,34 @@ void Buffer_pop(Buffer* b) {
 	if (b == NULL) {
 		return;
 	}
-	if (b->size == 1) {
-	 	b->head = NULL;
+	if (b->size == 0) {
+	 	return;
 	}
-	if (b->size > 0) {
-		Bnode* popped = b->tail;
-		b->tail = b->tail->next;
-		/*deallocate popped*/
-		recv_buf_cleanup(popped->buf);
-		free(popped->buf);
-		free(popped);
-		b->size--;
+	recv_buf_cleanup(b->queue[b->front]);
+	free(b->queue[b->front]);
+	b->queue[b->front] = NULL;
+	if (b->front == b->rear) {
+		b->front = -1;
+		b->rear = -1;
+	} else if (b->front == b->max_size - 1) {
+		b->front = 0;
+	} else {
+		b->front++;
 	}
+	b->size--;
 }
 
 void Buffer_clean(Buffer *b) {
-	if (b->size > 0) {
-		Bnode* stepper = b->tail;
-		while (stepper != NULL) {
-			Bnode* popped = stepper;
-			stepper = stepper->next;
-			recv_buf_cleanup(popped->buf);
-			free(popped->buf);
-			free(popped);
+	if (b->size == 0) return;
+	for (int i = 0; i < b->max_size; ++i) {
+		if (b->queue[i] != NULL) {
+			recv_buf_cleanup(b->queue[i]);
+			free(b->queue[i]);
+			b->queue[i] = NULL;
 		}
 	}
-	b->tail = NULL;
-	b->head = NULL;
+	b->front = -1;
+	b->head = -1;
 	b->size = 0;
 }
 
