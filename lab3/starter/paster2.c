@@ -224,6 +224,10 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		U8 header[8];
 		fread(header, 8, 1, sample);
 
+//
+		printf("\nHEADER: (%s)\n", header);
+//
+
 		//Validate the received image segment
 		if(is_png(header, 8)) {
 			perror("is_png");

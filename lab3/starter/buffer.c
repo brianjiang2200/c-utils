@@ -16,6 +16,7 @@ void Buffer_init(Buffer* b, int max_size) {
 	}
 	for (int i = 0; i < max_size; ++i) {
 		recv_buf_init(&b->queue[i], 10000);
+		b->queue[i].seq = i;
 	}
 }
 
