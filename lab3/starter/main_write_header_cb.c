@@ -61,7 +61,7 @@ size_t header_cb_curl(char *p_recv, size_t size, size_t nmemb, void *userdata)
 {
     int realsize = size * nmemb;
     RECV_BUF *p = userdata;
-    
+
     if (realsize > strlen(ECE252_HEADER) &&
 	strncmp(p_recv, ECE252_HEADER, strlen(ECE252_HEADER)) == 0) {
 
@@ -75,7 +75,7 @@ size_t header_cb_curl(char *p_recv, size_t size, size_t nmemb, void *userdata)
 
 /**
  * @brief write callback function to save a copy of received data in RAM.
- *        The received libcurl data are pointed by p_recv, 
+ *        The received libcurl data are pointed by p_recv,
  *        which is provided by libcurl and is not user allocated memory.
  *        The user allocated memory is at p_userdata. One needs to
  *        cast it to the proper struct to make good use of it.
@@ -87,10 +87,10 @@ size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
 {
     size_t realsize = size * nmemb;
     RECV_BUF *p = (RECV_BUF *)p_userdata;
- 
-    if (p->size + realsize + 1 > p->max_size) {/* hope this rarely happens */ 
+
+    if (p->size + realsize + 1 > p->max_size) {/* hope this rarely happens */
         /* received data is not 0 terminated, add one byte for terminating 0 */
-        size_t new_size = p->max_size + max(BUF_INC, realsize + 1);   
+        size_t new_size = p->max_size + max(BUF_INC, realsize + 1);
         char *q = realloc(p->buf, new_size);
         if (q == NULL) {
             perror("realloc"); /* out of memory */
@@ -111,20 +111,18 @@ size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
 int recv_buf_init(RECV_BUF *ptr, size_t max_size)
 {
     void *p = NULL;
-    
+
     if (ptr == NULL) {
         return 1;
     }
 
-    p = malloc(max_size);
-    if (p == NULL) {
-	return 2;
-    }
-    
+    ptr->buf_shmid = shmget(IPC_PRIVATE, max_size, 0666 | IPC_CREAT);
+
     ptr->buf = p;
     ptr->size = 0;
     ptr->max_size = max_size;
     ptr->seq = -1;              /* valid seq should be non-negative */
+
     return 0;
 }
 
@@ -133,7 +131,7 @@ int recv_buf_cleanup(RECV_BUF *ptr)
     if (ptr == NULL) {
 	return 1;
     }
-    
+
     free(ptr->buf);
     ptr->size = 0;
     ptr->max_size = 0;
@@ -170,7 +168,7 @@ int write_file(const char *path, const void *in, size_t len)
 
     if (fwrite(in, 1, len, fp) != len) {
         fprintf(stderr, "write_file: imcomplete write!\n");
-        return -3; 
+        return -3;
     }
     return fclose(fp);
 }

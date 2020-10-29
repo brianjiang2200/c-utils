@@ -11,7 +11,8 @@ typedef struct recv_buf2 {
 	size_t size; 		/*size of valid data in buf in bytes*/
 	size_t max_size;	/*max capacity of buf in bytes*/
 	int seq;		/* >=0 sequence number extracted from http header*/
-				/* <0 indicates an invalid seq number*/
+					/* <0 indicates an invalid seq number*/
+	int buf_shmid;
 } RECV_BUF;
 
 size_t header_cb_curl(char *p_recv, size_t size, size_t nmemb, void *userdata);

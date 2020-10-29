@@ -3,12 +3,6 @@
 #include <stdlib.h>
 #include "main_write_header_cb.h"
 
-typedef struct Bnode_tmp
-{
-	RECV_BUF* buf;
-	struct Bnode_tmp* next;
-} Bnode;
-
 typedef struct Buffer
 {
 	int size;
@@ -16,6 +10,7 @@ typedef struct Buffer
 	int front;
 	int rear;
 	RECV_BUF* queue;
+	int q_shmid;
 } Buffer;
 
 void Buffer_init(Buffer* b, int max_size);

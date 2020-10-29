@@ -11,12 +11,16 @@ void Buffer_init(Buffer* b, int max_size) {
 	b->max_size = max_size;
 	b->front = -1;
 	b->rear = -1;
+
+	//b->q_shmid will be used to reference the specific queue (which image seg) we need
+	b->q_shmid = smhget(IPC_PRIVATE, b->max_size * sizeof(RECV_BUF), 0666 | IPC_CREAT);
+/*
 	if (b->queue == NULL) {
 		b->queue = malloc(max_size * sizeof(RECV_BUF));
 	}
+*/
 	for (int i = 0; i < max_size; ++i) {
 		recv_buf_init(&b->queue[i], 10000);
-		b->queue[i].seq = i;
 	}
 }
 
