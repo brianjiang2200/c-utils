@@ -23,7 +23,7 @@ void Buffer_init(Buffer* b, int max_size, int recv_buf_size) {
 	}
 }
 
-void Buffer_add(Buffer* b, RECV_BUF* node) {
+void Buffer_add(Buffer* b, RECV_BUF* node, int recv_buf_size) {
 	if (b == NULL || node == NULL) {
 		return;
 	}
@@ -34,15 +34,16 @@ void Buffer_add(Buffer* b, RECV_BUF* node) {
 	else if (b->front == -1) {
 		b->front = 0;
 		b->rear = 0;
-		memcpy(b->queue, node, sizeof_shm_recv_buf(10240));
+		memcpy(b->queue, node, sizeof_shm_recv_buf(recv_buf_size));
 	}
 	else if (b->rear == b->max_size - 1 && b->front != 0) {
 		b->rear = 0;
-		memcpy(b->queue, node, sizeof_shm_recv_buf(10240));
+		memcpy(b->queue, node, sizeof_shm_recv_buf(recv_buf_size));
 	}
 	else {
 		b->rear++;
-		memcpy(b->queue + b->rear * sizeof_shm_recv_buf(10240), node, sizeof_shm_recv_buf(10240));
+		memcpy(b->queue + b->rear * sizeof_shm_recv_buf(recv_buf_size),
+			node, sizeof_shm_recv_buf(recv_buf_size));
 	}
 	b->size++;
 }

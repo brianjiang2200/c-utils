@@ -101,19 +101,19 @@ int main(int argc, char** argv) {
 			abort();
 		} else if (prod_ids[i] == 0) {
 			/*generate shared memory segments*/
-			multipc* shared_multipc = (multipc*) shmat(multipc_shmid, NULL, 0);
-			Buffer* shared_buf = (Buffer*) shmat(shared_buf_shmid, NULL, 0);
+			//multipc* shared_multipc = (multipc*) shmat(multipc_shmid, NULL, 0);
+			//Buffer* shared_buf = (Buffer*) shmat(shared_buf_shmid, NULL, 0);
 			/*fail if error*/
-			if (shared_multipc == (multipc*)-1 || shared_buf == (Buffer*)-1) {
+			/*if (shared_multipc == (multipc*)-1 || shared_buf == (Buffer*)-1) {
 				perror("shmat");
 				abort();
-			}
+			}*/
 			/*perform all producer work here*/
-			if (producer(shared_buf, shared_multipc, img_no) != 0) {
+			if (producer(deleted_shared_buf, deleted_multipc, img_no) != 0) {
 				printf("Producer failed\n");
 				return -1;
 			}
-			if (shmdt(shared_multipc) != 0 || shmdt(shared_buf) != 0) {
+			if (shmdt(deleted_multipc) != 0 || shmdt(deleted_shared_buf) != 0) {
 				perror("shmdt");
 				abort();
 			}
@@ -224,9 +224,9 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		printf("CONSUMER: consumer %d got the go ahead\n", k);
 		pthread_mutex_lock(&pc->shared_mutex);
 
-		printf("Address of Buffer: %p\n", (void*)b);
-        	printf("Address of Buffer Queue %p\n", (void*)b->queue);
-        	printf("Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
+		printf("CONS: Address of Buffer: %p\n", (void*)b);
+        	printf("CONS: Address of Buffer Queue %p\n", (void*)b->queue);
+        	printf("CONS: Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
 
 		RECV_BUF* data = &b->queue[b->rear];
 
@@ -339,15 +339,18 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
-		Buffer_add(b, recv_buf);
+		printf("PROD: Address of Buffer Queue %p\n", (void*)b->queue);
+		printf("PROD: Address of Buffer: %p\n", (void*)b);
+		printf("PROD: Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
+		Buffer_add(b, recv_buf, IMG_SIZE);
 
 		//puts("1");
 
 		printf("PRODUCER: added img %d to the buffer: buffer size %d and seq num: %d\n", k,
 			b->size, recv_buf->seq);
-		printf("Address of Buffer: %p\n", (void*)b);
-        	printf("Address of Buffer Queue %p\n", (void*)b->queue);
-        	printf("Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
+		printf("PROD: Address of Buffer: %p\n", (void*)b);
+        	printf("PROD: Address of Buffer Queue %p\n", (void*)b->queue);
+        	printf("PROD: Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
 		k = pc->num_produced;
 		pc->num_produced++;
 		pthread_mutex_unlock(&pc->shared_mutex);
