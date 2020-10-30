@@ -34,16 +34,19 @@ void Buffer_add(Buffer* b, RECV_BUF* node, int recv_buf_size) {
 	else if (b->front == -1) {
 		b->front = 0;
 		b->rear = 0;
-		memcpy(b->queue, node, sizeof_shm_recv_buf(recv_buf_size));
+		/*copy everything except the pointer, which is stored at the start*/
+		memcpy((char*)(b->queue + sizeof(char*)), node, sizeof_shm_recv_buf(recv_buf_size) - sizeof(char*));
 	}
 	else if (b->rear == b->max_size - 1 && b->front != 0) {
 		b->rear = 0;
-		memcpy(b->queue, node, sizeof_shm_recv_buf(recv_buf_size));
+
+		memcpy((char*)(b->queue + sizeof(char*)), node, sizeof_shm_recv_buf(recv_buf_size) - sizeof(char*));
 	}
 	else {
 		b->rear++;
-		memcpy(b->queue + b->rear * sizeof_shm_recv_buf(recv_buf_size),
-			node, sizeof_shm_recv_buf(recv_buf_size));
+
+		memcpy((char*)(b->queue + b->rear * sizeof_shm_recv_buf(recv_buf_size) + sizeof(char*)),
+			node, sizeof_shm_recv_buf(recv_buf_size) - sizeof(char*));
 	}
 	b->size++;
 }
