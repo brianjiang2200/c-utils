@@ -21,6 +21,7 @@
 
 #define IMG_URL "http://ece252-1.uwaterloo.ca:2530/image?img="
 #define ECE252_HEADER "X-Ece252-Fragment: "
+#define IMG_SIZE 10240
 
 typedef struct DingLirenWC {
 	sem_t shared_spaces;
@@ -58,7 +59,7 @@ int main(int argc, char** argv) {
 
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 
-	int shared_buf_shmid = shmget(IPC_PRIVATE, sizeof_Buffer(buf_size, 10240), 0666 | IPC_CREAT);
+	int shared_buf_shmid = shmget(IPC_PRIVATE, sizeof_Buffer(buf_size, IMG_SIZE), 0666 | IPC_CREAT);
 	/*array of inflated IDAT data*/
 	int IDAT_shmid = shmget(IPC_PRIVATE, 50 * sizeof(struct chunk*), 0666 | IPC_CREAT);
 	/*Init all required shared multipc elements*/
@@ -75,7 +76,7 @@ int main(int argc, char** argv) {
 		perror("shmat");
 		abort();
 	}
-	Buffer_init(deleted_shared_buf, buf_size);
+	Buffer_init(deleted_shared_buf, buf_size, sizeof_shm_recv_buf(IMG_SIZE));
 	sem_init(&(deleted_multipc->shared_spaces), 1, buf_size);
 	sem_init(&(deleted_multipc->shared_items), 1, 0);
 	pthread_mutex_init(&(deleted_multipc->shared_mutex), NULL);
@@ -87,6 +88,7 @@ int main(int argc, char** argv) {
 	printf("Address of Buffer Queue %p\n", (void*)deleted_shared_buf->queue);
 	printf("Address of Buffer Queue[0].buf %p\n", (void*)deleted_shared_buf->queue[0].buf);
 	printf("sizeof Buffer: %ld\n", sizeof(Buffer));
+	printf("actual size of Buffer: %d\n", sizeof_Buffer(buf_size, IMG_SIZE));
 	printf("sizeof RECV_BUF: %ld\n", sizeof(RECV_BUF));
 
 	/*Do work here*/
@@ -308,7 +310,7 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 		//puts("-3");
 
 		RECV_BUF* recv_buf = (RECV_BUF*) malloc(sizeof_shm_recv_buf(10240));
-		if (shm_recv_buf_init(recv_buf, 10240) != 0) perror("recv_buf_init");
+		if (shm_recv_buf_init(recv_buf, IMG_SIZE) != 0) perror("recv_buf_init");
 		char url[64];
 		sprintf(url, "%s%d&part=%d", IMG_URL, img_no, k);
 

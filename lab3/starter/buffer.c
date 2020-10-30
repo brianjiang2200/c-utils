@@ -6,15 +6,21 @@
 #include "buffer.h"
 #include "main_2proc.h"
 
-void Buffer_init(Buffer* b, int max_size) {
+void Buffer_init(Buffer* b, int max_size, int recv_buf_size) {
+	/*address space should be allocated by user*/
 	if (b == NULL) {
-		b = (Buffer*) malloc(sizeof(Buffer));
+		return;
 	}
 	b->size = 0;
 	b->max_size = max_size;
 	b->front = -1;
 	b->rear = -1;
 	b->queue = (RECV_BUF*)((char*) b + sizeof(Buffer));
+	/*init all queue slots*/
+	for (int i = 0; i < max_size; ++i) {
+		RECV_BUF* ptr = (RECV_BUF*) ((char*) b + i * sizeof_shm_recv_buf(recv_buf_size));
+		printf("%d\n", shm_recv_buf_init(ptr, recv_buf_size));
+	}
 }
 
 void Buffer_add(Buffer* b, RECV_BUF* node) {
@@ -70,7 +76,7 @@ void Buffer_clean(Buffer *b) {
 }
 
 int sizeof_Buffer(int buffer_size, size_t recv_buf_size) {
-	return(sizeof(Buffer) + buffer_size * sizeof_shm_recv_buf(recv_buf_size));
+	return sizeof(Buffer) + (buffer_size * sizeof_shm_recv_buf(recv_buf_size));
 }
 
 /*

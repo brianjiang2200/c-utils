@@ -12,7 +12,7 @@ typedef struct Buffer
 	int rear;
 } Buffer;
 
-void Buffer_init(Buffer* b, int max_size);
+void Buffer_init(Buffer* b, int max_size, int recv_buf_size);
 void Buffer_add(Buffer* b, RECV_BUF* node);
 void Buffer_pop(Buffer* b);
 void Buffer_clean(Buffer *b);
