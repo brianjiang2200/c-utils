@@ -230,7 +230,8 @@ int main( int argc, char** argv )
 
     p_shm_recv_buf = shmat(shmid, NULL, 0);
     shm_recv_buf_init(p_shm_recv_buf, BUF_SIZE);
-
+    printf("addr of %p\n", (void*)p_shm_recv_buf);
+    printf("addr of %p\n", (void*)p_shm_recv_buf->buf);
 
     if (argc == 1) {
         strcpy(url, IMG_URL); 

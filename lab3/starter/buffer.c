@@ -28,19 +28,15 @@ void Buffer_add(Buffer* b, RECV_BUF* node) {
 	else if (b->front == -1) {
 		b->front = 0;
 		b->rear = 0;
-		memcpy(&b->queue[0], node, sizeof(RECV_BUF));
-		memcpy(b->queue[0].buf, node->buf, node->size);
+		memcpy(b->queue, node, sizeof_shm_recv_buf(10240));
 	}
 	else if (b->rear == b->max_size - 1 && b->front != 0) {
 		b->rear = 0;
-		memcpy(&b->queue[0], node, sizeof(RECV_BUF));
-		memcpy(b->queue[0].buf, node->buf, node->size);
+		memcpy(b->queue, node, sizeof_shm_recv_buf(10240));
 	}
 	else {
 		b->rear++;
-		memcpy((char*)b->queue + b->rear * sizeof_shm_recv_buf(10240), node, sizeof(RECV_BUF));
-		memcpy((char*)b->queue + b->rear * sizeof_shm_recv_buf(10240) + sizeof(RECV_BUF), node->buf,
-			node->size);
+		memcpy(b->queue + b->rear * sizeof_shm_recv_buf(10240), node, sizeof_shm_recv_buf(10240));
 	}
 	b->size++;
 }
