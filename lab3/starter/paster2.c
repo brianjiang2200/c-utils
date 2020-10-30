@@ -310,7 +310,7 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 
 		//puts("-3");
 
-		RECV_BUF* recv_buf = (RECV_BUF*) malloc(sizeof_shm_recv_buf(10240));
+		RECV_BUF* recv_buf = (RECV_BUF*) malloc(sizeof_shm_recv_buf(IMG_SIZE));
 		if (shm_recv_buf_init(recv_buf, IMG_SIZE) != 0) perror("recv_buf_init");
 		char url[64];
 		sprintf(url, "%s%d&part=%d", IMG_URL, img_no, k);
