@@ -70,8 +70,8 @@ void Buffer_clean(Buffer *b) {
 	b->size = 0;
 }
 
-int sizeof_Buffer(size_t recv_buf_size) {
-	return(sizeof(Buffer) + max_size * sizeof_shm_recv_buf(10240));
+int sizeof_Buffer(int buffer_size, size_t recv_buf_size) {
+	return(sizeof(Buffer) + buffer_size * sizeof_shm_recv_buf(recv_buf_size));
 }
 
 /*

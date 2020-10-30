@@ -23,12 +23,12 @@
 #define ECE252_HEADER "X-Ece252-Fragment: "
 
 typedef struct DingLirenWC {
-	Buffer shared_buf;
 	sem_t shared_spaces;
 	sem_t shared_items;
 	pthread_mutex_t shared_mutex;
 	int num_produced;
 	int num_consumed;
+	Buffer* shared_buf;
 } multipc;
 
 int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time);
@@ -62,7 +62,9 @@ int main(int argc, char** argv) {
 	/*array of inflated IDAT data*/
 	int IDAT_shmid = shmget(IPC_PRIVATE, 50 * sizeof(struct chunk*), 0666 | IPC_CREAT);
 	/*Init all required shared multipc elements*/
-	int multipc_shmid = shmget(IPC_PRIVATE, sizeof(multipc), 0666 | IPC_CREAT);
+	int multipc_shmid = shmget(IPC_PRIVATE,
+		2 * sizeof(sem_t) + sizeof(pthread_mutex_t), + 2 * sizeof(int) + sizeof_Buffer(buf_size, 10240),
+	 	0666 | IPC_CREAT);
 	/*fail if error*/
 	if (multipc_shmid == -1 || IDAT_shmid == -1) {
 		perror("shmget");
@@ -74,7 +76,7 @@ int main(int argc, char** argv) {
 		perror("shmat");
 		abort();
 	}
-	Buffer_init(&deleted_multipc->shared_buf, buf_size);
+	Buffer_init(deleted_multipc->shared_buf, buf_size);
 	sem_init(&(deleted_multipc->shared_spaces), 1, buf_size);
 	sem_init(&(deleted_multipc->shared_items), 1, 0);
 	pthread_mutex_init(&(deleted_multipc->shared_mutex), NULL);
@@ -208,15 +210,7 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		printf("CONSUMER: consumer %d got the go ahead\n", k);
 		pthread_mutex_lock(&pc->shared_mutex);
 
-//TEST
-		printf("CONSUMER: FIRST 4 BYTES OF pc->shared_buf.queue[0].buf: (%c%c%c%c%c%c%c%c)\n",
-			pc->shared_buf.queue[0].buf[0], pc->shared_buf.queue[0].buf[1],
-			pc->shared_buf.queue[0].buf[2], pc->shared_buf.queue[0].buf[3],
-			pc->shared_buf.queue[0].buf[4], pc->shared_buf.queue[0].buf[5],
-			pc->shared_buf.queue[0].buf[6], pc->shared_buf.queue[0].buf[7]);
-//
-
-		RECV_BUF* data = &pc->shared_buf.queue[pc->shared_buf.rear];
+		RECV_BUF* data = pc->shared_buf->queue[pc->shared_buf.rear];
 
 		//Create the image segment PNG file
 		char fname[32];
