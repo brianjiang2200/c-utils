@@ -4,7 +4,7 @@
 #include <sys/shm.h>
 #include <string.h>
 #include "buffer.h"
-#include "main_2proc.c"
+#include "main_2proc.h"
 
 void Buffer_init(Buffer* b, int max_size) {
 	if (b == NULL) {
@@ -14,7 +14,7 @@ void Buffer_init(Buffer* b, int max_size) {
 	b->max_size = max_size;
 	b->front = -1;
 	b->rear = -1;
-	b->queue = (char*) b + sizeof(Buffer);
+	b->queue = (RECV_BUF*)((char*) b + sizeof(Buffer));
 }
 
 void Buffer_add(Buffer* b, RECV_BUF* node) {
@@ -65,7 +65,7 @@ void Buffer_pop(Buffer* b) {
 void Buffer_clean(Buffer *b) {
 	if (b->size == 0) return;
 	for (int i = 0; i < b->max_size; ++i) {
-		recv_buf_cleanup(&b->queue[i]);
+		shm_recv_buf_cleanup(&b->queue[i]);
 	}
 	b->front = -1;
 	b->rear = -1;

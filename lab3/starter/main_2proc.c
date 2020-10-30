@@ -26,7 +26,6 @@
  * @see https://ec.haxx.se/callback-write.html
  */ 
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -153,15 +152,25 @@ int shm_recv_buf_init(RECV_BUF *ptr, size_t nbytes)
     if ( ptr == NULL ) {
         return 1;
     }
-    
+
     ptr->buf = (char *)ptr + sizeof(RECV_BUF);
     ptr->size = 0;
     ptr->max_size = nbytes;
     ptr->seq = -1;              /* valid seq should be non-negative */
-    
+
     return 0;
 }
 
+int shm_recv_buf_cleanup(RECV_BUF *ptr)
+{
+    if (ptr == NULL) {
+	return 1;
+    }
+
+    ptr->size = 0;
+    ptr->max_size = 0;
+    return 0;
+}
 
 /**
  * @brief output data in memory to a file
