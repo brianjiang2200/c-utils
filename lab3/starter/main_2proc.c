@@ -14,10 +14,13 @@
  */
 
 /** 
- * @file main_wirte_read_cb.c
- * @brief cURL write call back to save received data in a user defined memory first
- *        and then write the data to a file for verification purpose.
+ * @file main_2proc.c
+ * @brief Two processes system. The child process uses cURL to download data to
+ *        a shared memory region through cURL call back.
+ *        The parent process wait till the child to finish and then 
+ *        read the data from the shared memory region and output it to a file.
  *        cURL header call back extracts data sequence number from header.
+ *        Synchronization is done through waitpid, no semaphores are used.
  * @see https://curl.haxx.se/libcurl/c/getinmemory.html
  * @see https://curl.haxx.se/libcurl/using/
  * @see https://ec.haxx.se/callback-write.html
@@ -28,21 +31,47 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/shm.h>
 #include <unistd.h>
 #include <curl/curl.h>
-#include "main_write_header_cb.h"
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <semaphore.h>
+#include "main_2proc.h"
 
-#define IMG_URL "http://ece252-1.uwaterloo.ca:2520/image?img=1"
+#define IMG_URL "http://ece252-1.uwaterloo.ca:2530/image?img=1&part=20"
 #define DUM_URL "https://example.com/"
 #define ECE252_HEADER "X-Ece252-Fragment: "
-#define BUF_SIZE 1048576  /* 1024*1024 = 1M */
-#define BUF_INC  524288   /* 1024*512  = 0.5M */
+#define BUF_SIZE 10240
 
-#define max(a, b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
+/* This is a flattened structure, buf points to 
+   the memory address immediately after 
+   the last member field (i.e. seq) in the structure.
+   Here is the memory layout. 
+   Note that the memory is a chunk of continuous bytes.
+
+   On a 64-bit machine, the memory layout is as follows:
+   +================+
+   | buf            | 8 bytes
+   +----------------+
+   | size           | 8 bytes
+   +----------------+
+   | max_size       | 8 bytes
+   +----------------+
+   | seq            | 4 bytes
+   +----------------+
+   | padding        | 4 bytes
+   +----------------+
+   | buf[0]         | 1 byte
+   +----------------+
+   | buf[1]         | 1 byte
+   +----------------+
+   | ...            | 1 byte
+   +----------------+
+   | buf[max_size-1]| 1 byte
+   +================+
+*/
+
 
 /**
  * @brief  cURL header call back function to extract image sequence number from 
@@ -62,7 +91,7 @@ size_t header_cb_curl(char *p_recv, size_t size, size_t nmemb, void *userdata)
 {
     int realsize = size * nmemb;
     RECV_BUF *p = userdata;
-
+    
     if (realsize > strlen(ECE252_HEADER) &&
 	strncmp(p_recv, ECE252_HEADER, strlen(ECE252_HEADER)) == 0) {
 
@@ -76,7 +105,7 @@ size_t header_cb_curl(char *p_recv, size_t size, size_t nmemb, void *userdata)
 
 /**
  * @brief write callback function to save a copy of received data in RAM.
- *        The received libcurl data are pointed by p_recv,
+ *        The received libcurl data are pointed by p_recv, 
  *        which is provided by libcurl and is not user allocated memory.
  *        The user allocated memory is at p_userdata. One needs to
  *        cast it to the proper struct to make good use of it.
@@ -84,21 +113,14 @@ size_t header_cb_curl(char *p_recv, size_t size, size_t nmemb, void *userdata)
  *        curl_easy_perform().
  */
 
-size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
+size_t write_cb_curl(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
 {
     size_t realsize = size * nmemb;
     RECV_BUF *p = (RECV_BUF *)p_userdata;
-
-    if (p->size + realsize + 1 > p->max_size) {/* hope this rarely happens */
-        /* received data is not 0 terminated, add one byte for terminating 0 */
-        size_t new_size = p->max_size + max(BUF_INC, realsize + 1);
-        char *q = realloc(p->buf, new_size);
-        if (q == NULL) {
-            perror("realloc"); /* out of memory */
-            return -1;
-        }
-        p->buf = q;
-        p->max_size = new_size;
+ 
+    if (p->size + realsize + 1 > p->max_size) {/* hope this rarely happens */ 
+        fprintf(stderr, "User buffer is too small, abort...\n");
+        abort();
     }
 
     memcpy(p->buf + p->size, p_recv, realsize); /*copy data from libcurl*/
@@ -108,37 +130,35 @@ size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
     return realsize;
 }
 
-
-int recv_buf_init(RECV_BUF *ptr, size_t max_size)
+/**
+ * @brief calculate the actual size of RECV_BUF
+ * @param size_t nbytes number of bytes that buf in RECV_BUF struct would hold
+ * @return the REDV_BUF member fileds size plus the RECV_BUF buf data size
+ */
+int sizeof_shm_recv_buf(size_t nbytes)
 {
-
-    if (ptr == NULL) {
-        return 1;
-    }
-
-    ptr->buf_shmid = shmget(IPC_PRIVATE, max_size, 0666 | IPC_CREAT);
-
-    ptr->size = 0;
-    ptr->max_size = max_size;
-    ptr->seq = -1;              /* valid seq should be non-negative */
-
-    return 0;
+    return (sizeof(RECV_BUF) + sizeof(char) * nbytes);
 }
 
-int recv_buf_cleanup(RECV_BUF *ptr)
+/**
+ * @brief initialize the RECV_BUF structure. 
+ * @param RECV_BUF *ptr memory allocated by user to hold RECV_BUF struct
+ * @param size_t nbytes the RECV_BUF buf data size in bytes
+ * NOTE: caller should call sizeof_shm_recv_buf first and then allocate memory.
+ *       caller is also responsible for releasing the memory.
+ */
+
+int shm_recv_buf_init(RECV_BUF *ptr, size_t nbytes)
 {
-    if (ptr == NULL) {
-	return 1;
+    if ( ptr == NULL ) {
+        return 1;
     }
-
-    if (shmctl(ptr->buf_shmid, IPC_RMID, NULL) == -1) {
-	perror("shmctl");
-	abort();
-    }
-
-    ptr->buf_shmid = 0;
+    
+    ptr->buf = (char *)ptr + sizeof(RECV_BUF);
     ptr->size = 0;
-    ptr->max_size = 0;
+    ptr->max_size = nbytes;
+    ptr->seq = -1;              /* valid seq should be non-negative */
+    
     return 0;
 }
 
@@ -172,7 +192,18 @@ int write_file(const char *path, const void *in, size_t len)
 
     if (fwrite(in, 1, len, fp) != len) {
         fprintf(stderr, "write_file: imcomplete write!\n");
-        return -3;
+        return -3; 
     }
     return fclose(fp);
 }
+
+
+
+
+
+
+
+
+
+
+

@@ -14,7 +14,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include "catpng.h"
-#include "main_write_header_cb.h"
+#include "main_2proc.h"
 #include "buffer.h"
 #include "zutil.h"
 #include "lab_png.h"
@@ -290,7 +290,7 @@ int producer(multipc* pc, int img_no) {
 		return -1;
 	}
 	CURLcode res;
-	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_cb_curl3);
+	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_cb_curl);
 	curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_cb_curl);
 	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
