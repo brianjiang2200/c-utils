@@ -1,6 +1,7 @@
 /*Custom Implementation of a fixed size queue to store recieve data from a CURL callback*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/shm.h>
 #include "buffer.h"
 
 void Buffer_init(Buffer* b, int max_size) {
@@ -13,18 +14,20 @@ void Buffer_init(Buffer* b, int max_size) {
 	b->rear = -1;
 
 	//b->q_shmid will be used to reference the specific queue (which image seg) we need
-	b->q_shmid = smhget(IPC_PRIVATE, b->max_size * sizeof(RECV_BUF), 0666 | IPC_CREAT);
+	b->q_shmid = shmget(IPC_PRIVATE, b->max_size * sizeof(RECV_BUF), 0666 | IPC_CREAT);
 	b->queue = (RECV_BUF*) shmat(b->q_shmid, NULL, 0);
 	for (int i = 0; i < max_size; ++i) {
 		recv_buf_init(&b->queue[i], 10000);
 	}
-	/*do not detach yet*/
+	/*detach after every call because functions may be called from different origins*/
+	if (shmdt(b->queue) != 0) {perror("shmdt"); abort();}
 }
 
 void Buffer_add(Buffer* b, RECV_BUF* node) {
 	if (b == NULL || node == NULL) {
 		return;
 	}
+	b->queue = (RECV_BUF*) shmat(b->q_shmid, NULL, 0);
 	/*Buffer full?*/
 	if (b->size >= b->max_size) {
 		return;
@@ -32,19 +35,27 @@ void Buffer_add(Buffer* b, RECV_BUF* node) {
 	else if (b->front == -1) {
 		b->front = 0;
 		b->rear = 0;
+		/*must attach to buffer location*/
+		b->queue[b->rear].buf = (char*) shmat(b->queue[b->rear].buf_shmid, NULL, 0);
 		memcpy(&b->queue[b->rear], node, sizeof(RECV_BUF));
 		memcpy(b->queue[b->rear].buf, node->buf, node->size);
+		if (shmdt(b->queue[b->rear].buf) != 0) {perror("shmdt"); abort();}
 	}
 	else if (b->rear == b->max_size - 1 && b->front != 0) {
 		b->rear = 0;
+		b->queue[b->rear].buf = (char*) shmat(b->queue[b->rear].buf_shmid, NULL, 0);
 		memcpy(&b->queue[b->rear], node, sizeof(RECV_BUF));
 		memcpy(b->queue[b->rear].buf, node->buf, node->size);
+		if (shmdt(b->queue[b->rear].buf) != 0) {perror("shmdt"); abort();}
 	}
 	else {
 		b->rear++;
+		b->queue[b->rear].buf = (char*) shmat(b->queue[b->rear].buf_shmid, NULL, 0);
 		memcpy(&b->queue[b->rear], node, sizeof(RECV_BUF));
 		memcpy(b->queue[b->rear].buf, node->buf, node->size);
+		if (shmdt(b->queue[b->rear].buf) != 0) {perror("shmdt"); abort();}
 	}
+	if (shmdt(b->queue) != 0) {perror("shmdt"); abort();}
 	b->size++;
 }
 

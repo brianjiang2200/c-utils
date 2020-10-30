@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/shm.h>
 #include <unistd.h>
 #include <curl/curl.h>
 #include "main_write_header_cb.h"
@@ -110,7 +111,6 @@ size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
 
 int recv_buf_init(RECV_BUF *ptr, size_t max_size)
 {
-    void *p = NULL;
 
     if (ptr == NULL) {
         return 1;
@@ -118,7 +118,6 @@ int recv_buf_init(RECV_BUF *ptr, size_t max_size)
 
     ptr->buf_shmid = shmget(IPC_PRIVATE, max_size, 0666 | IPC_CREAT);
 
-    ptr->buf = (char*) shmat(ptr->buf_shmid, NULL, 0);
     ptr->size = 0;
     ptr->max_size = max_size;
     ptr->seq = -1;              /* valid seq should be non-negative */
@@ -132,10 +131,6 @@ int recv_buf_cleanup(RECV_BUF *ptr)
 	return 1;
     }
 
-    if (shmdt(ptr->buf) != 0) {
-	perror("shmdt");
-	abort();
-    }
     if (shmctl(ptr->buf_shmid, IPC_RMID, NULL) == -1) {
 	perror("shmctl");
 	abort();

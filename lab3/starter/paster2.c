@@ -127,10 +127,10 @@ int main(int argc, char** argv) {
 				abort();
 			}
 			/*perform all consumer work here*/
-			if(consumer(shared_multipc, shared_IDAT, sleep_time) != 0) {
+			/*if(consumer(shared_multipc, shared_IDAT, sleep_time) != 0) {
 				printf("Consumer failed\n");
 				return -1;
-			}
+			}*/
 			if (shmdt(shared_multipc) != 0 || shmdt(shared_IDAT) != 0) {
 				perror("shmdt");
 				abort();
@@ -217,11 +217,6 @@ int consumer(multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 //
 
 		RECV_BUF* data = &pc->shared_buf.queue[pc->shared_buf.rear];
-
-//TEST
-		printf("CONSUMER: FIRST 4 BYTES OF data->buf: (%c%c%c%c%c%c%c%c)\n", data->buf[0], data->buf[1],
-			data->buf[2], data->buf[3], data->buf[4], data->buf[5], data->buf[6], data->buf[7]);
-//
 
 		//Create the image segment PNG file
 		char fname[32];
@@ -322,30 +317,18 @@ int producer(multipc* pc, int img_no) {
 			return -2;
 		}
 
-		printf("PRODUCER: FIRST 4 BYTES OF recv_buf.buf: (%c%c%c%c%c%c%c%c)\n", recv_buf.buf[0],
-			recv_buf.buf[1], recv_buf.buf[2], recv_buf.buf[3], recv_buf.buf[4], recv_buf.buf[5],
-			recv_buf.buf[6], recv_buf.buf[7]);
-
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
 		Buffer_add(&pc->shared_buf, &recv_buf);
 
-		printf("PRODUCER: FIRST 4 BYTES OF pc->shared_buf.queue[0].buf: (%c%c%c%c%c%c%c%c)\n",
-			pc->shared_buf.queue[0].buf[0], pc->shared_buf.queue[0].buf[1],
-			pc->shared_buf.queue[0].buf[2], pc->shared_buf.queue[0].buf[3],
-			pc->shared_buf.queue[0].buf[4], pc->shared_buf.queue[0].buf[5],
-			pc->shared_buf.queue[0].buf[6], pc->shared_buf.queue[0].buf[7]);
-
 		printf("PRODUCER: added img %d to the buffer: buffer size %d and seq num: %d\n", k,
 			pc->shared_buf.size, recv_buf.seq);
-		printf("PRODUCER: seq number recieved: %d\n", pc->shared_buf.queue[pc->shared_buf.front].seq);
 		k = pc->num_produced;
 		pc->num_produced++;
 		pthread_mutex_unlock(&pc->shared_mutex);
 		sem_post(&pc->shared_items);
 
 		recv_buf_cleanup(&recv_buf);
-
 	}
 	curl_easy_cleanup(curl_handle);
 
