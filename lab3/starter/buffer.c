@@ -18,7 +18,7 @@ void Buffer_init(Buffer* b, int max_size, int recv_buf_size) {
 	b->queue = (RECV_BUF*)((char*) b + sizeof(Buffer));
 	/*init all queue slots*/
 	for (int i = 0; i < max_size; ++i) {
-		RECV_BUF* ptr = (RECV_BUF*) ((char*) b + sizeof(Buffer) + i * sizeof_shm_recv_buf(recv_buf_size));
+		RECV_BUF* ptr = (RECV_BUF*) ((char*)b->queue + i * sizeof_shm_recv_buf(recv_buf_size));
 		shm_recv_buf_init(ptr, recv_buf_size);
 	}
 }

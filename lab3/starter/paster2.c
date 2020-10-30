@@ -224,6 +224,10 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		printf("CONSUMER: consumer %d got the go ahead\n", k);
 		pthread_mutex_lock(&pc->shared_mutex);
 
+		printf("Address of Buffer: %p\n", (void*)b);
+        	printf("Address of Buffer Queue %p\n", (void*)b->queue);
+        	printf("Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
+
 		RECV_BUF* data = &b->queue[b->rear];
 
 		//Create the image segment PNG file
@@ -341,6 +345,9 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 
 		printf("PRODUCER: added img %d to the buffer: buffer size %d and seq num: %d\n", k,
 			b->size, recv_buf->seq);
+		printf("Address of Buffer: %p\n", (void*)b);
+        	printf("Address of Buffer Queue %p\n", (void*)b->queue);
+        	printf("Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
 		k = pc->num_produced;
 		pc->num_produced++;
 		pthread_mutex_unlock(&pc->shared_mutex);
