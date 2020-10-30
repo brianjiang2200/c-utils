@@ -4,27 +4,27 @@
  * https://curl.haxx.se/libcurl/c/getinmemory.html
  * Copyright (C) 1998 - 2018, Daniel Stenberg, <daniel@haxx.se>, et al..
  *
- * The paster.c code is 
+ * The paster.c code is
  * Copyright 2013 Patrick Lam, <p23lam@uwaterloo.ca>.
  *
  * Modifications to the code are
  * Copyright 2018-2019, Yiqing Huang, <yqhuang@uwaterloo.ca>.
- * 
+ *
  * This software may be freely redistributed under the terms of the X11 license.
  */
 
-/** 
+/**
  * @file main_2proc.c
  * @brief Two processes system. The child process uses cURL to download data to
  *        a shared memory region through cURL call back.
- *        The parent process wait till the child to finish and then 
+ *        The parent process wait till the child to finish and then
  *        read the data from the shared memory region and output it to a file.
  *        cURL header call back extracts data sequence number from header.
  *        Synchronization is done through waitpid, no semaphores are used.
  * @see https://curl.haxx.se/libcurl/c/getinmemory.html
  * @see https://curl.haxx.se/libcurl/using/
  * @see https://ec.haxx.se/callback-write.html
- */ 
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,10 +43,10 @@
 #define ECE252_HEADER "X-Ece252-Fragment: "
 #define BUF_SIZE 10240
 
-/* This is a flattened structure, buf points to 
-   the memory address immediately after 
+/* This is a flattened structure, buf points to
+   the memory address immediately after
    the last member field (i.e. seq) in the structure.
-   Here is the memory layout. 
+   Here is the memory layout.
    Note that the memory is a chunk of continuous bytes.
 
    On a 64-bit machine, the memory layout is as follows:
@@ -73,7 +73,7 @@
 
 
 /**
- * @brief  cURL header call back function to extract image sequence number from 
+ * @brief  cURL header call back function to extract image sequence number from
  *         http header data. An example header for image part n (assume n = 2) is:
  *         X-Ece252-Fragment: 2
  * @param  char *p_recv: header data delivered by cURL
@@ -82,7 +82,7 @@
  * @param  void *userdata user defined data structurea
  * @return size of header data received.
  * @details this routine will be invoked multiple times by the libcurl until the full
- * header data are received.  we are only interested in the ECE252_HEADER line 
+ * header data are received.  we are only interested in the ECE252_HEADER line
  * received so that we can extract the image sequence number from it. This
  * explains the if block in the code.
  */
@@ -90,7 +90,7 @@ size_t header_cb_curl(char *p_recv, size_t size, size_t nmemb, void *userdata)
 {
     int realsize = size * nmemb;
     RECV_BUF *p = userdata;
-    
+
     if (realsize > strlen(ECE252_HEADER) &&
 	strncmp(p_recv, ECE252_HEADER, strlen(ECE252_HEADER)) == 0) {
 
@@ -104,7 +104,7 @@ size_t header_cb_curl(char *p_recv, size_t size, size_t nmemb, void *userdata)
 
 /**
  * @brief write callback function to save a copy of received data in RAM.
- *        The received libcurl data are pointed by p_recv, 
+ *        The received libcurl data are pointed by p_recv,
  *        which is provided by libcurl and is not user allocated memory.
  *        The user allocated memory is at p_userdata. One needs to
  *        cast it to the proper struct to make good use of it.
