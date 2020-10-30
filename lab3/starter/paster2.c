@@ -127,10 +127,10 @@ int main(int argc, char** argv) {
 				abort();
 			}
 			/*perform all consumer work here*/
-			/*if(consumer(shared_buf, shared_multipc, shared_IDAT, sleep_time) != 0) {
+			if(consumer(shared_buf, shared_multipc, shared_IDAT, sleep_time) != 0) {
 				printf("Consumer failed\n");
 				return -1;
-			}*/
+			}
 			if (shmdt(shared_multipc) != 0 || shmdt(shared_IDAT) != 0 || shmdt(shared_buf) != 0) {
 				perror("shmdt");
 				abort();
@@ -222,9 +222,8 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		write_file(fname, data->buf, data->size);
 		//pthread_mutex_unlock(&pc->shared_mutex);
 
-		printf("CONSUMER: consumer %d finished critical process 1\n", k);
 		//Open PNG file for reading
-		FILE* sample = fopen(fname, "r");
+		/*FILE* sample = fopen(fname, "r");
 
 		//Read header
 		U8 header[8];
@@ -263,7 +262,7 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		//pthread_mutex_lock(&pc->shared_mutex);
 
 		//Copy inflated data into proper place in memory
-		all_IDAT[data->seq] = new_IDAT;
+		all_IDAT[data->seq] = new_IDAT;*/
 
 		//Pop the image read from the queue
 		Buffer_pop(b);
