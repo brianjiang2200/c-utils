@@ -118,7 +118,7 @@ int recv_buf_init(RECV_BUF *ptr, size_t max_size)
 
     ptr->buf_shmid = shmget(IPC_PRIVATE, max_size, 0666 | IPC_CREAT);
 
-    ptr->buf = p;
+    ptr->buf = (char*) shmat(ptr->buf_shmid, NULL, 0);
     ptr->size = 0;
     ptr->max_size = max_size;
     ptr->seq = -1;              /* valid seq should be non-negative */
@@ -132,7 +132,16 @@ int recv_buf_cleanup(RECV_BUF *ptr)
 	return 1;
     }
 
-    free(ptr->buf);
+    if (shmdt(ptr->buf) != 0) {
+	perror("shmdt");
+	abort();
+    }
+    if (shmctl(ptr->buf_shmid, IPC_RMID, NULL) == -1) {
+	perror("shmctl");
+	abort();
+    }
+
+    ptr->buf_shmid = 0;
     ptr->size = 0;
     ptr->max_size = 0;
     return 0;
