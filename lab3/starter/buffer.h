@@ -5,11 +5,11 @@
 
 typedef struct Buffer
 {
+	RECV_BUF* queue;
 	int size;
 	int max_size;
 	int front;
 	int rear;
-	RECV_BUF* queue;
 } Buffer;
 
 void Buffer_init(Buffer* b, int max_size);

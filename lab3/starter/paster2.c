@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
 	/*array of inflated IDAT data*/
 	int IDAT_shmid = shmget(IPC_PRIVATE, 50 * sizeof(struct chunk*), 0666 | IPC_CREAT);
 	/*Init all required shared multipc elements*/
-	int multipc_shmid = shmget(IPC_PRIVATE, sizeof(Buffer), 0666 | IPC_CREAT);
+	int multipc_shmid = shmget(IPC_PRIVATE, sizeof(multipc), 0666 | IPC_CREAT);
 	/*fail if error*/
 	if (multipc_shmid == -1 || IDAT_shmid == -1 || shared_buf_shmid == -1) {
 		perror("shmget");
@@ -81,6 +81,13 @@ int main(int argc, char** argv) {
 	pthread_mutex_init(&(deleted_multipc->shared_mutex), NULL);
 	deleted_multipc->num_produced = 0;
 	deleted_multipc->num_consumed = 0;
+
+	/*Check Addresses*/
+	printf("Address of Buffer: %p\n", (void*)deleted_shared_buf);
+	printf("Address of Buffer Queue %p\n", (void*)deleted_shared_buf->queue);
+	printf("Address of Buffer Queue[0].buf %p\n", (void*)deleted_shared_buf->queue[0].buf);
+	printf("sizeof Buffer: %ld\n", sizeof(Buffer));
+	printf("sizeof RECV_BUF: %ld\n", sizeof(RECV_BUF));
 
 	/*Do work here*/
 	/*Initialize producer processes*/
@@ -325,11 +332,6 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
-		printf("Address of Buffer: %p\n", (void*)b);
-		printf("Address of Buffer Queue %p\n", (void*)b->queue);
-		printf("Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
-		printf("sizeof Buffer: %ld\n", sizeof(Buffer));
-		printf("sizeof RECV_BUF: %ld\n", sizeof(RECV_BUF));
 		Buffer_add(b, recv_buf);
 
 		//puts("1");
