@@ -299,14 +299,20 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 
 	while(k < 50) {
 
+		puts("-3");
+
 		RECV_BUF recv_buf;
 		if (shm_recv_buf_init(&recv_buf, 10000) != 0) perror("recv_buf_init");
 		char url[64];
 		sprintf(url, "%s%d&part=%d", IMG_URL, img_no, k);
 
+		puts("-2");
+
 		curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 		curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&recv_buf);
 		curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void*)&recv_buf);
+
+		puts("-1");
 
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
@@ -315,16 +321,25 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 			return -2;
 		}
 
+		puts("0");
+
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
 		Buffer_add(b, &recv_buf);
+
+		puts("1");
 
 		printf("PRODUCER: added img %d to the buffer: buffer size %d and seq num: %d\n", k,
 			b->size, recv_buf.seq);
 		k = pc->num_produced;
 		pc->num_produced++;
 		pthread_mutex_unlock(&pc->shared_mutex);
+
+		puts("2");
+
 		sem_post(&pc->shared_items);
+
+		puts("3");
 
 		shm_recv_buf_cleanup(&recv_buf);
 	}

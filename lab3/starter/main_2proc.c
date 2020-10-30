@@ -89,7 +89,7 @@
 size_t header_cb_curl(char *p_recv, size_t size, size_t nmemb, void *userdata)
 {
     int realsize = size * nmemb;
-    RECV_BUF *p = userdata;
+    RECV_BUF *p = (RECV_BUF *)userdata;
     
     if (realsize > strlen(ECE252_HEADER) &&
 	strncmp(p_recv, ECE252_HEADER, strlen(ECE252_HEADER)) == 0) {
@@ -116,8 +116,8 @@ size_t write_cb_curl(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
 {
     size_t realsize = size * nmemb;
     RECV_BUF *p = (RECV_BUF *)p_userdata;
- 
-    if (p->size + realsize + 1 > p->max_size) {/* hope this rarely happens */ 
+
+    if (p->size + realsize + 1 > p->max_size) {/* hope this rarely happens */
         fprintf(stderr, "User buffer is too small, abort...\n");
         abort();
     }
@@ -140,7 +140,7 @@ int sizeof_shm_recv_buf(size_t nbytes)
 }
 
 /**
- * @brief initialize the RECV_BUF structure. 
+ * @brief initialize the RECV_BUF structure.
  * @param RECV_BUF *ptr memory allocated by user to hold RECV_BUF struct
  * @param size_t nbytes the RECV_BUF buf data size in bytes
  * NOTE: caller should call sizeof_shm_recv_buf first and then allocate memory.
@@ -201,7 +201,7 @@ int write_file(const char *path, const void *in, size_t len)
 
     if (fwrite(in, 1, len, fp) != len) {
         fprintf(stderr, "write_file: imcomplete write!\n");
-        return -3; 
+        return -3;
     }
     return fclose(fp);
 }
