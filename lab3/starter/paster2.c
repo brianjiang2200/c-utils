@@ -90,6 +90,7 @@ int main(int argc, char** argv) {
 	printf("sizeof Buffer: %ld\n", sizeof(Buffer));
 	printf("actual size of Buffer: %d\n", sizeof_Buffer(buf_size, IMG_SIZE));
 	printf("sizeof RECV_BUF: %ld\n", sizeof(RECV_BUF));
+	printf("actual size of shm_recv_buf: %d\n", sizeof_shm_recv_buf(IMG_SIZE));
 
 	/*Do work here*/
 	/*Initialize producer processes*/
