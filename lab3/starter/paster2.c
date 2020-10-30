@@ -70,27 +70,24 @@ int main(int argc, char** argv) {
 		abort();
 	}
 	/*Must init shared memory elements prior to any processes are generated*/
-	multipc* deleted_multipc = (multipc*) shmat(multipc_shmid, NULL, 0);
-	Buffer* deleted_shared_buf = (Buffer*) shmat(shared_buf_shmid, NULL, 0);
-	if (deleted_multipc == (multipc*)-1 || deleted_shared_buf == (Buffer*)-1) {
+	multipc* shared_multipc = (multipc*) shmat(multipc_shmid, NULL, 0);
+	Buffer* shared_buf = (Buffer*) shmat(shared_buf_shmid, NULL, 0);
+	struct chunk** IDAT_arr = (struct chunk**) shmat(IDAT_shmid, NULL, 0);
+	if (shared_multipc == (multipc*)-1 || shared_buf == (Buffer*)-1 || IDAT_arr == (struct chunk**)-1) {
 		perror("shmat");
 		abort();
 	}
-	Buffer_init(deleted_shared_buf, buf_size, sizeof_shm_recv_buf(IMG_SIZE));
-	sem_init(&(deleted_multipc->shared_spaces), 1, buf_size);
-	sem_init(&(deleted_multipc->shared_items), 1, 0);
-	pthread_mutex_init(&(deleted_multipc->shared_mutex), NULL);
-	deleted_multipc->num_produced = 0;
-	deleted_multipc->num_consumed = 0;
+	Buffer_init(shared_buf, buf_size, sizeof_shm_recv_buf(IMG_SIZE));
+	sem_init(&(shared_multipc->shared_spaces), 1, buf_size);
+	sem_init(&(shared_multipc->shared_items), 1, 0);
+	pthread_mutex_init(&(shared_multipc->shared_mutex), NULL);
+	shared_multipc->num_produced = 0;
+	shared_multipc->num_consumed = 0;
 
 	/*Check Addresses*/
-	printf("Address of Buffer: %p\n", (void*)deleted_shared_buf);
-	printf("Address of Buffer Queue %p\n", (void*)deleted_shared_buf->queue);
-	printf("Address of Buffer Queue[0].buf %p\n", (void*)deleted_shared_buf->queue[0].buf);
-	printf("sizeof Buffer: %ld\n", sizeof(Buffer));
-	printf("actual size of Buffer: %d\n", sizeof_Buffer(buf_size, IMG_SIZE));
-	printf("sizeof RECV_BUF: %ld\n", sizeof(RECV_BUF));
-	printf("actual size of shm_recv_buf: %d\n", sizeof_shm_recv_buf(IMG_SIZE));
+	printf("Address of Buffer: %p\n", (void*)shared_buf);
+	printf("Address of Buffer Queue %p\n", (void*)shared_buf->queue);
+	printf("Address of Buffer Queue[0].buf %p\n", (void*)shared_buf->queue[0].buf);
 
 	/*Do work here*/
 	/*Initialize producer processes*/
@@ -101,19 +98,14 @@ int main(int argc, char** argv) {
 			abort();
 		} else if (prod_ids[i] == 0) {
 			/*generate shared memory segments*/
-			multipc* shared_multipc = (multipc*) shmat(multipc_shmid, NULL, 0);
-			Buffer* shared_buf = (Buffer*) shmat(shared_buf_shmid, NULL, 0);
-			/*fail if error*/
-			if (shared_multipc == (multipc*)-1 || shared_buf == (Buffer*)-1) {
-				perror("shmat");
-				abort();
-			}
+			//multipc* shared_multipc = (multipc*) shmat(multipc_shmid, NULL, 0);
+			//Buffer* shared_buf = (Buffer*) shmat(shared_buf_shmid, NULL, 0);
 			/*perform all producer work here*/
 			if (producer(shared_buf, shared_multipc, img_no) != 0) {
 				printf("Producer failed\n");
 				return -1;
 			}
-			if (shmdt(deleted_multipc) != 0 || shmdt(deleted_shared_buf) != 0) {
+			if (shmdt(shared_multipc) != 0 || shmdt(shared_buf) != 0) {
 				perror("shmdt");
 				abort();
 			}
@@ -128,20 +120,19 @@ int main(int argc, char** argv) {
 			abort();
 		} else if (cons_ids[i] == 0) {
 			/*generate shared memory segments*/
-			multipc* shared_multipc = (multipc*) shmat(multipc_shmid, NULL, 0);
-			struct chunk** shared_IDAT = (struct chunk**) shmat(IDAT_shmid, NULL, 0);
+			/*multipc* shared_multipc = (multipc*) shmat(multipc_shmid, NULL, 0);
 			Buffer* shared_buf = (Buffer*) shmat(shared_buf_shmid, NULL, 0);
 			if (shared_multipc == (multipc*) -1 || shared_IDAT == (struct chunk**) -1 ||
 				shared_buf == (Buffer*)-1) {
 				perror("shmat");
 				abort();
-			}
+			}*/
 			/*perform all consumer work here*/
-			if(consumer(shared_buf, shared_multipc, shared_IDAT, sleep_time) != 0) {
+			if(consumer(shared_buf, shared_multipc, IDAT_arr, sleep_time) != 0) {
 				printf("Consumer failed\n");
 				return -1;
 			}
-			if (shmdt(shared_multipc) != 0 || shmdt(shared_IDAT) != 0 || shmdt(shared_buf) != 0) {
+			if (shmdt(shared_multipc) != 0 || shmdt(IDAT_arr) != 0 || shmdt(shared_buf) != 0) {
 				perror("shmdt");
 				abort();
 			}
@@ -162,17 +153,12 @@ int main(int argc, char** argv) {
 	}
 
 	/*Initialize all.png chunks after work has been performed*/
-	struct chunk** IDAT_arr = (struct chunk**) shmat(IDAT_shmid, NULL, 0);
-	if (IDAT_arr == (struct chunk**)-1) {
-		perror("shmat");
-		abort();
-	}
 	if (shmdt(IDAT_arr) != 0) {
 		perror("shmdt");
 		abort();
 	}
 
-	if (shmdt(deleted_multipc) != 0 || shmdt(deleted_shared_buf) != 0) {
+	if (shmdt(shared_multipc) != 0 || shmdt(shared_buf) != 0) {
 		perror("shmdt");
 		abort();
 	}
@@ -218,7 +204,7 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 	pc->num_consumed++;
 	pthread_mutex_unlock(&pc->shared_mutex);
 
-	while(k < 10) {
+	while(k < 40) {
 
 		sem_wait(&pc->shared_items);
 		printf("CONSUMER: consumer %d got the go ahead\n", k);
@@ -227,8 +213,6 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		printf("CONS: Address of Buffer: %p\n", (void*)b);
         	printf("CONS: Address of Buffer Queue %p\n", (void*)b->queue);
         	printf("CONS: Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
-
-		printf("CONSUMER: %s\n", (char*)b->queue[0].buf);
 
 		RECV_BUF* data = &b->queue[b->rear];
 
@@ -252,7 +236,7 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		}
 
 		//Read IDAT
-                struct chunk* new_IDAT = malloc(sizeof(struct chunk));
+                /*struct chunk* new_IDAT = malloc(sizeof(struct chunk));
 		get_chunk(new_IDAT, sample, 1);
 
 		//Inflate received IDAT data
@@ -274,7 +258,7 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 //		pthread_mutex_lock(&pc->shared_mutex);
 
 		//Copy inflated data into proper place in memory
-		all_IDAT[data->seq] = new_IDAT;
+		all_IDAT[data->seq] = new_IDAT;*/
 
 		//Pop the image read from the queue
 		Buffer_pop(b);
@@ -308,22 +292,16 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 	pc->num_produced++;
 	pthread_mutex_unlock(&pc->shared_mutex);
 
-	while(k < 10) {
-
-		//puts("-3");
+	while(k < 40) {
 
 		RECV_BUF* recv_buf = (RECV_BUF*) malloc(sizeof_shm_recv_buf(IMG_SIZE));
 		if (shm_recv_buf_init(recv_buf, IMG_SIZE) != 0) perror("recv_buf_init");
 		char url[64];
 		sprintf(url, "%s%d&part=%d", IMG_URL, img_no, k);
 
-		//puts("-2");
-
 		curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 		curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)recv_buf);
 		curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void*)recv_buf);
-
-		//puts("-1");
 
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
@@ -333,41 +311,23 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 			return -2;
 		}
 
-		//puts("0");
-
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
 
-//
-		printf("PROD: Address of Buffer: %p\n", (void*)b);
-		printf("PROD: Address of Buffer Queue %p\n", (void*)b->queue);
-		printf("PROD: Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
-//
-
 		Buffer_add(b, recv_buf, IMG_SIZE);
-
-		printf("PRODUCER: %s\n", (char*)b->queue[0].buf);
-
-		//puts("1");
 
 		printf("PRODUCER: added img %d to the buffer: buffer size %d and seq num: %d\n", k,
 			b->size, recv_buf->seq);
 
-//
 		printf("PROD: Address of Buffer: %p\n", (void*)b);
         	printf("PROD: Address of Buffer Queue %p\n", (void*)b->queue);
         	printf("PROD: Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
-//
 
 		k = pc->num_produced;
 		pc->num_produced++;
 		pthread_mutex_unlock(&pc->shared_mutex);
 
-		//puts("2");
-
 		sem_post(&pc->shared_items);
-
-		//puts("3");
 
 		shm_recv_buf_cleanup(recv_buf);
 		free(recv_buf);
