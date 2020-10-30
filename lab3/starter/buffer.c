@@ -27,6 +27,7 @@ void Buffer_add(Buffer* b, RECV_BUF* node) {
 	if (b == NULL || node == NULL) {
 		return;
 	}
+	printf("%d\n", b->q_shmid);
 	b->queue = (RECV_BUF*) shmat(b->q_shmid, NULL, 0);
 	/*Buffer full?*/
 	if (b->size >= b->max_size) {
