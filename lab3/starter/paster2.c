@@ -339,8 +339,8 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
-		printf("PROD: Address of Buffer Queue %p\n", (void*)b->queue);
 		printf("PROD: Address of Buffer: %p\n", (void*)b);
+		printf("PROD: Address of Buffer Queue %p\n", (void*)b->queue);
 		printf("PROD: Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
 		Buffer_add(b, recv_buf, IMG_SIZE);
 
