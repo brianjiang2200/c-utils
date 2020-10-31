@@ -56,17 +56,24 @@ void Buffer_add(Buffer* b, RECV_BUF* node, int recv_buf_size) {
 	b->size++;
 }
 
-void Buffer_pop(Buffer* b) {
+/*2nd argument is the node where data is to be copied*/
+void Buffer_pop(Buffer* b, RECV_BUF* node, int recv_buf_size) {
 	if (b == NULL) {
 		return;
 	}
 	if (b->size == 0) {
 	 	return;
 	}
+
+	memcpy((char*)node + sizeof(char*),
+		(char*)b->queue + b->rear * sizeof_shm_recv_buf(recv_buf_size) + sizeof(char*),
+		sizeof_shm_recv_buf(recv_buf_size) - sizeof(char*));
+
 	if (b->front == b->rear) {
 		b->front = -1;
 		b->rear = -1;
 	} else if (b->front == b->max_size - 1) {
+
 		b->front = 0;
 	} else {
 		b->front++;
