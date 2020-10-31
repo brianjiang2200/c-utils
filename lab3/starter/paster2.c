@@ -123,11 +123,9 @@ int main(int argc, char** argv) {
 	int status;
 	for (int i = 0; i < no_producers; ++i) {
 		waitpid(prod_ids[i], &status, 0);
-		printf("Producer %d exited with status: %d\n", i, status);
 	}
 	for (int i = 0; i < no_consumers; ++i) {
 		waitpid(cons_ids[i], &status, 0);
-		printf("Consumer %d exited with status: %d\n", i, status);
 	}
 
 
@@ -135,10 +133,12 @@ int main(int argc, char** argv) {
 	char* filenames[51];
 	filenames[0] = malloc(20*sizeof(char));
 	sprintf(filenames[0], "first");
+
 	for(int i = 1; i < 51; i++) {
 		filenames[i] = malloc(20*sizeof(char));
 		sprintf(filenames[i], "output_%d.png", i - 1);
 	}
+
 	if(catpng(51, filenames) != 0) {
 		perror("catpng");
 		for (int i = 0; i < 51; ++i) {
@@ -146,6 +146,7 @@ int main(int argc, char** argv) {
 			free(filenames[i]);
 		}
 	}
+
         for(int i = 0; i < 51; i++) {
 		remove(filenames[i]);
 		free(filenames[i]);
@@ -159,7 +160,6 @@ int main(int argc, char** argv) {
 	pthread_mutex_destroy(&shared_multipc->counter_mutex);
 	pthread_mutexattr_destroy(&shared_multipc->attrmutex);
 	pthread_mutexattr_destroy(&shared_multipc->c_attrmutex);
-
 
 	if (shmdt(shared_multipc) != 0 || shmdt(shared_buf) != 0) {
 		perror("shmdt");
@@ -200,11 +200,11 @@ int consumer(Buffer* b, multipc* pc, int sleep_time) {
 		pthread_mutex_unlock(&pc->counter_mutex);
 
 		if (k < 50) {
+			RECV_BUF* recv_buf = (RECV_BUF*) malloc(sizeof_shm_recv_buf(IMG_SIZE));
+                        if (shm_recv_buf_init(recv_buf, IMG_SIZE) != 0) perror("recv_buf_init");
+
 			sem_wait(&pc->shared_items);
 			pthread_mutex_lock(&pc->shared_mutex);
-
-			RECV_BUF* recv_buf = (RECV_BUF*) malloc(sizeof_shm_recv_buf(IMG_SIZE));
-			if (shm_recv_buf_init(recv_buf, IMG_SIZE) != 0) perror("recv_buf_init");
 
 			//Pop the image read from the queue
 			Buffer_pop(b, recv_buf, IMG_SIZE);
@@ -225,7 +225,6 @@ int consumer(Buffer* b, multipc* pc, int sleep_time) {
 			shm_recv_buf_cleanup(recv_buf);
 			free(recv_buf);
 
-			printf("CONSUMER: consumed item %d from the buffer\n", k);
 		}
 	}
 
@@ -278,8 +277,6 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 		pthread_mutex_lock(&pc->shared_mutex);
 
 		Buffer_add(b, recv_buf, IMG_SIZE);
-		printf("PRODUCER: added img %d to the buffer: buffer size %d and seq num: %d\n", k,
-			b->size, recv_buf->seq);
 
 		pthread_mutex_unlock(&pc->shared_mutex);
 		sem_post(&pc->shared_items);
