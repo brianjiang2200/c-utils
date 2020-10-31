@@ -100,6 +100,8 @@ int main(int argc, char** argv) {
 				printf("Producer failed\n");
 				return -1;
 			}
+			/*free pids*/
+			free(prod_ids);
 			return 0;
 		}
 	}
@@ -115,6 +117,8 @@ int main(int argc, char** argv) {
 				printf("Consumer failed\n");
 				return -1;
 			}
+			free(prod_ids);
+			free(cons_ids);
 			return 0;
 		}
 	}
@@ -212,7 +216,6 @@ int consumer(Buffer* b, multipc* pc, int sleep_time) {
 			pthread_mutex_unlock(&pc->shared_mutex);
 			sem_post(&pc->shared_spaces);
 
-			printf("seq: %d and size: %ld\n", recv_buf->seq, recv_buf->size);
                 	//Create the image segment PNG file
                 	char fname[32];
                 	memset(fname, 0, 32);
