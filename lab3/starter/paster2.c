@@ -26,8 +26,10 @@
 typedef struct DingLirenWC {
 	sem_t shared_spaces;
 	sem_t shared_items;
+	sem_t buffer;
+	sem_t download;
+	sem_t consumed;
 	pthread_mutex_t shared_mutex;
-	pthread_mutex_t counter_mutex;
 	int num_produced;
 	int num_consumed;
 } multipc;
@@ -81,8 +83,10 @@ int main(int argc, char** argv) {
 	Buffer_init(shared_buf, buf_size, sizeof_shm_recv_buf(IMG_SIZE));
 	sem_init(&(shared_multipc->shared_spaces), 1, buf_size);
 	sem_init(&(shared_multipc->shared_items), 1, 0);
+	sem_init(&(shared_multipc->buffer), 1, 1);
+	sem_init(&(shared_multipc->download), 1, 1);
+	sem_init(&(shared_multipc->consumed), 1, 1);
 	pthread_mutex_init(&(shared_multipc->shared_mutex), NULL);
-	pthread_mutex_init(&(shared_multipc->counter_mutex), NULL);
 	shared_multipc->num_produced = 0;
 	shared_multipc->num_consumed = 0;
 
@@ -133,14 +137,13 @@ int main(int argc, char** argv) {
 
 	/*wait for all child processes to finish*/
 	int status;
-	pid_t pid;
 	for (int i = 0; i < no_producers; ++i) {
-		pid = wait(&status);
-		printf("%d exited with status: %d\n", pid, status);
+		waitpid(prod_ids[i], &status, 0);
+		printf("Producer %d exited with status: %d\n", i, status);
 	}
 	for (int i = 0; i < no_consumers; ++i) {
-		pid = wait(&status);
-		printf("%d exited with status: %d\n", pid, status);
+		waitpid(cons_ids[i], &status, 0);
+		printf("Consumer %d exited with status: %d\n", i, status);
 	}
 
 //TEST
@@ -171,8 +174,9 @@ int main(int argc, char** argv) {
 	//destroy mutex and semaphores
 	sem_destroy(&shared_multipc->shared_spaces);
 	sem_destroy(&shared_multipc->shared_items);
+	sem_destroy(&shared_multipc->sem_nop);
+	sem_destroy(&shared_multipc->sem_noc);
 	pthread_mutex_destroy(&shared_multipc->shared_mutex);
-	pthread_mutex_destroy(&shared_multipc->counter_mutex);
 
 	/*Initialize all.png chunks after work has been performed*/
 	if (shmdt(shared_multipc) != 0 || shmdt(shared_buf) != 0 || shmdt(IDAT_arr) != 0) {
@@ -203,32 +207,21 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
-/*ALGORITHM:
-	Initialize global data structures storing all.png properties
-	->IDAT data for each segment stored in an array
-	Initialize a Buffer of size buf_size
-	Fork no_producers processes
-	Initialize no_consumers consumers
-	Producers add image data to Buffer
-	Consumers process data into global data structures and sleep for sleep_time ms
-	Output all.png when done
-*/
-
 int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 
-	pthread_mutex_lock(&pc->counter_mutex);
-	int k = pc->num_consumed;
-	pc->num_consumed++;
-	pthread_mutex_unlock(&pc->counter_mutex);
+	int k = 0;
 
 	while(k < 50) {
+		usleep(sleep_time * 1000);
+
+		sem_wait(&pc->sem_noc);
+		k = pc->num_consumed;
+		pc->num_consumed++;
+		sem_post(&pc->sem_noc);
+
 		sem_wait(&pc->shared_items);
 		printf("CONSUMER: consumer %d got the go ahead\n", k);
 		pthread_mutex_lock(&pc->shared_mutex);
-
-//		printf("CONS: Address of Buffer: %p\n", (void*)b);
-//		printf("CONS: Address of Buffer Queue %p\n", (void*)b->queue);
-//		printf("CONS: Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
 
 		RECV_BUF* data = &b->queue[b->rear];
 
@@ -236,52 +229,12 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		char fname[32];
 		sprintf(fname, "output_%d.png", data->seq);
 		write_file(fname, data->buf, data->size);
-		//pthread_mutex_unlock(&pc->shared_mutex);
 
-		//Open PNG file for reading
-		FILE* sample = fopen(fname, "r");
-
-		//Read header
-		U8 header[8];
-		fread(header, 8, 1, sample);
-
-		//Validate the received image segment
-		if(is_png(header, 8)) {
-			perror("is_png");
-			return -1;
-		}
-
-		//Read IDAT
-                struct chunk* new_IDAT = malloc(sizeof(struct chunk));
-		get_chunk(new_IDAT, sample, 1);
-
-		//Inflate received IDAT data
-		U8* inflated_data = malloc(30 * new_IDAT->length);
-		U64 len_inf = 0;
-		U64 src_length = new_IDAT->length;
-		int ret = mem_inf(inflated_data, &len_inf, new_IDAT->p_data, src_length);
-		if (ret) {
-			printf("Mem Inf Error: Return value %d\n", ret);
-			return ret;
-		}
-                new_IDAT->p_data = inflated_data;
-                new_IDAT->length = len_inf;
-		printf("CONSUMER: consumer %d successfully inflated data\n", k);
-
-		//Sleep for specified amount of time
-		usleep(sleep_time * 1000);
-
-		//pthread_mutex_lock(&pc->shared_mutex);
-
-		//Copy inflated data into proper place in memory
-		all_IDAT[data->seq] = new_IDAT;
 
 		//Pop the image read from the queue
 		Buffer_pop(b);
 		printf("CONSUMER: consumed item %d from the buffer\n", k);
 		//Increment number of images processed
-		k = pc->num_consumed;
-		pc->num_consumed++;
 
 		pthread_mutex_unlock(&pc->shared_mutex);
 
@@ -303,12 +256,15 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 	curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_cb_curl);
 	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
-	pthread_mutex_lock(&pc->counter_mutex);
-	int k = pc->num_produced;
-	pc->num_produced++;
-	pthread_mutex_unlock(&pc->counter_mutex);
+	int k = 0;
 
 	while(k < 50) {
+
+		sem_wait(&pc->sem_nop);
+		k = pc->num_produced;
+		pc->num_produced++;
+		sem_post(&pc->sem_nop);
+
 		RECV_BUF* recv_buf = (RECV_BUF*) malloc(sizeof_shm_recv_buf(IMG_SIZE));
 		if (shm_recv_buf_init(recv_buf, IMG_SIZE) != 0) perror("recv_buf_init");
 		char url[64];
@@ -334,14 +290,7 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 		printf("PRODUCER: added img %d to the buffer: buffer size %d and seq num: %d\n", k,
 			b->size, recv_buf->seq);
 
-//		printf("PROD: Address of Buffer: %p\n", (void*)b);
-//		printf("PROD: Address of Buffer Queue %p\n", (void*)b->queue);
-//		printf("PROD: Address of Buffer Queue[0].buf %p\n", (void*)b->queue[0].buf);
-
-		k = pc->num_produced;
-		pc->num_produced++;
 		pthread_mutex_unlock(&pc->shared_mutex);
-
 		sem_post(&pc->shared_items);
 
 		shm_recv_buf_cleanup(recv_buf);
