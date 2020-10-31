@@ -168,6 +168,12 @@ int main(int argc, char** argv) {
 	}
 	//(FROM LAB 2: paster.c)
 
+	//destroy mutex and semaphores
+	sem_destroy(&shared_multipc->shared_spaces);
+	sem_destroy(&shared_multipc->shared_items);
+	pthread_mutex_destroy(&shared_multipc->shared_mutex);
+	pthread_mutex_destroy(&shared_multipc->counter_mutex);
+
 	/*Initialize all.png chunks after work has been performed*/
 	if (shmdt(shared_multipc) != 0 || shmdt(shared_buf) != 0 || shmdt(IDAT_arr) != 0) {
 		perror("shmdt");
