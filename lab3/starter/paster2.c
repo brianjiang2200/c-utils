@@ -30,6 +30,7 @@ typedef struct DingLirenWC {
 	sem_t download;
 	sem_t consumed;
 	pthread_mutex_t shared_mutex;
+	pthread_mutex_t counter_mutex;
 	int num_produced;
 	int num_consumed;
 } multipc;
@@ -87,6 +88,7 @@ int main(int argc, char** argv) {
 	sem_init(&(shared_multipc->download), 1, 1);
 	sem_init(&(shared_multipc->consumed), 1, 1);
 	pthread_mutex_init(&(shared_multipc->shared_mutex), NULL);
+	pthread_mutex_init(&(shared_multipc->counter_mutex), NULL);
 	shared_multipc->num_produced = 0;
 	shared_multipc->num_consumed = 0;
 
@@ -174,8 +176,6 @@ int main(int argc, char** argv) {
 	//destroy mutex and semaphores
 	sem_destroy(&shared_multipc->shared_spaces);
 	sem_destroy(&shared_multipc->shared_items);
-	sem_destroy(&shared_multipc->sem_nop);
-	sem_destroy(&shared_multipc->sem_noc);
 	pthread_mutex_destroy(&shared_multipc->shared_mutex);
 
 	/*Initialize all.png chunks after work has been performed*/
@@ -209,19 +209,22 @@ int main(int argc, char** argv) {
 
 int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 
+	/*counter for images recieved*/
 	int k = 0;
 
 	while(k < 50) {
 		usleep(sleep_time * 1000);
 
-		sem_wait(&pc->sem_noc);
+		pthread_mutex_lock(&pc->counter_mutex);
 		k = pc->num_consumed;
+		printf("Consumer %d: holds counter mutex\n", k);
 		pc->num_consumed++;
-		sem_post(&pc->sem_noc);
+		pthread_mutex_unlock(&pc->counter_mutex);
+		printf("Consumer %d: released counter mutex\n", k);
 
 		sem_wait(&pc->shared_items);
-		printf("CONSUMER: consumer %d got the go ahead\n", k);
 		pthread_mutex_lock(&pc->shared_mutex);
+		printf("Consumer %d: holds mutex\n", k);
 
 		RECV_BUF* data = &b->queue[b->rear];
 
@@ -237,9 +240,8 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		//Increment number of images processed
 
 		pthread_mutex_unlock(&pc->shared_mutex);
-
+		printf("Conusumer %d: released mutex\n", k);
 		sem_post(&pc->shared_spaces);
-		//POST (unlock and increment number of spaces)
 	}
 
 	return 0;
@@ -256,14 +258,19 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 	curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_cb_curl);
 	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
+	/*counter of number received*/
 	int k = 0;
 
 	while(k < 50) {
 
-		sem_wait(&pc->sem_nop);
+		pthread_mutex_lock(&pc->counter_mutex);
 		k = pc->num_produced;
-		pc->num_produced++;
-		sem_post(&pc->sem_nop);
+		printf("Producer %d: holds counter mutex\n", k);
+		if (k < 50) pc->num_produced++;
+		pthread_mutex_unlock(&pc->counter_mutex);
+		printf("Producer %d: released counter mutex\n", k);
+
+		if (k < 50) {
 
 		RECV_BUF* recv_buf = (RECV_BUF*) malloc(sizeof_shm_recv_buf(IMG_SIZE));
 		if (shm_recv_buf_init(recv_buf, IMG_SIZE) != 0) perror("recv_buf_init");
@@ -284,17 +291,20 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
+		printf("PRODUCER %d: holds mutex\n", k);
 
 		Buffer_add(b, recv_buf, IMG_SIZE);
-
 		printf("PRODUCER: added img %d to the buffer: buffer size %d and seq num: %d\n", k,
 			b->size, recv_buf->seq);
 
 		pthread_mutex_unlock(&pc->shared_mutex);
+		printf("PRODUCER %d: released mutex\n", k);
 		sem_post(&pc->shared_items);
 
 		shm_recv_buf_cleanup(recv_buf);
 		free(recv_buf);
+
+		}
 	}
 	curl_easy_cleanup(curl_handle);
 
