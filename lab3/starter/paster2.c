@@ -143,13 +143,33 @@ int main(int argc, char** argv) {
 		printf("%d exited with status: %d\n", pid, status);
 	}
 
-	/*Initialize all.png chunks after work has been performed*/
-	if (shmdt(IDAT_arr) != 0) {
-		perror("shmdt");
-		abort();
-	}
+//TEST
+//	printf("MAIN: IDAT_arr[0]->p_data: %s\n", (char*)IDAT_arr[0]->p_data[0]);
+//
 
-	if (shmdt(shared_multipc) != 0 || shmdt(shared_buf) != 0) {
+	//CATPNG PROCESS (assuming all .png segments exist in directory)
+	char* filenames[51];
+	filenames[0] = malloc(20*sizeof(char));
+	sprintf(filenames[0], "first");
+	for(int i = 1; i < 51; i++) {
+		filenames[i] = malloc(20*sizeof(char));
+		sprintf(filenames[i], "output_%d.png", i - 1);
+	}
+	if(catpng(51, filenames) != 0) {
+		perror("catpng");
+		for (int i = 0; i < 51; ++i) {
+			remove(filenames[i]);
+			free(filenames[i]);
+		}
+	}
+        for(int i = 0; i < 51; i++) {
+		remove(filenames[i]);
+		free(filenames[i]);
+	}
+	//(FROM LAB 2: paster.c)
+
+	/*Initialize all.png chunks after work has been performed*/
+	if (shmdt(shared_multipc) != 0 || shmdt(shared_buf) != 0 || shmdt(IDAT_arr) != 0) {
 		perror("shmdt");
 		abort();
 	}
@@ -195,7 +215,7 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 	pc->num_consumed++;
 	pthread_mutex_unlock(&pc->counter_mutex);
 
-	while(k < 40) {
+	while(k < 50) {
 		sem_wait(&pc->shared_items);
 		printf("CONSUMER: consumer %d got the go ahead\n", k);
 		pthread_mutex_lock(&pc->shared_mutex);
@@ -226,7 +246,7 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		}
 
 		//Read IDAT
-                /*struct chunk* new_IDAT = malloc(sizeof(struct chunk));
+                struct chunk* new_IDAT = malloc(sizeof(struct chunk));
 		get_chunk(new_IDAT, sample, 1);
 
 		//Inflate received IDAT data
@@ -248,7 +268,7 @@ int consumer(Buffer* b, multipc* pc, struct chunk** all_IDAT, int sleep_time) {
 		//pthread_mutex_lock(&pc->shared_mutex);
 
 		//Copy inflated data into proper place in memory
-		all_IDAT[data->seq] = new_IDAT;*/
+		all_IDAT[data->seq] = new_IDAT;
 
 		//Pop the image read from the queue
 		Buffer_pop(b);
@@ -282,7 +302,7 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 	pc->num_produced++;
 	pthread_mutex_unlock(&pc->counter_mutex);
 
-	while(k < 40) {
+	while(k < 50) {
 		RECV_BUF* recv_buf = (RECV_BUF*) malloc(sizeof_shm_recv_buf(IMG_SIZE));
 		if (shm_recv_buf_init(recv_buf, IMG_SIZE) != 0) perror("recv_buf_init");
 		char url[64];
