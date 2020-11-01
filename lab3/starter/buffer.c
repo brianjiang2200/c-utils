@@ -23,13 +23,13 @@ void Buffer_init(Buffer* b, int max_size, int recv_buf_size) {
 	}
 }
 
-void Buffer_add(Buffer* b, RECV_BUF* node, int recv_buf_size) {
+int Buffer_add(Buffer* b, RECV_BUF* node, int recv_buf_size) {
 	if (b == NULL || node == NULL) {
-		return;
+		return 1;
 	}
 	/*Buffer full?*/
 	if (b->size >= b->max_size) {
-		return;
+		return 2;
 	}
 	else if (b->front == -1) {
 		b->front = 0;
@@ -54,31 +54,32 @@ void Buffer_add(Buffer* b, RECV_BUF* node, int recv_buf_size) {
 			sizeof_shm_recv_buf(recv_buf_size) - sizeof(char*));
 	}
 	b->size++;
+	return 0;
 }
 
 /*2nd argument is the node where data is to be copied*/
-void Buffer_pop(Buffer* b, RECV_BUF* node, int recv_buf_size) {
+int Buffer_pop(Buffer* b, RECV_BUF* node, int recv_buf_size) {
 	if (b == NULL) {
-		return;
+		return 1;
 	}
 	if (b->size == 0) {
-	 	return;
+	 	return 2;
 	}
 
 	memcpy((char*)node + sizeof(char*),
-		(char*)b->queue + b->rear * sizeof_shm_recv_buf(recv_buf_size) + sizeof(char*),
+		(char*)b->queue + b->front * sizeof_shm_recv_buf(recv_buf_size) + sizeof(char*),
 		sizeof_shm_recv_buf(recv_buf_size) - sizeof(char*));
 
 	if (b->front == b->rear) {
 		b->front = -1;
 		b->rear = -1;
 	} else if (b->front == b->max_size - 1) {
-
 		b->front = 0;
 	} else {
 		b->front++;
 	}
 	b->size--;
+	return 0;
 }
 
 void Buffer_clean(Buffer *b) {

@@ -13,8 +13,8 @@ typedef struct Buffer
 } Buffer;
 
 void Buffer_init(Buffer* b, int max_size, int recv_buf_size);
-void Buffer_add(Buffer* b, RECV_BUF* node, int recv_buf_size);
-void Buffer_pop(Buffer* b, RECV_BUF* node, int recv_buf_size);
+int Buffer_add(Buffer* b, RECV_BUF* node, int recv_buf_size);
+int Buffer_pop(Buffer* b, RECV_BUF* node, int recv_buf_size);
 void Buffer_clean(Buffer *b);
 int sizeof_Buffer(int buffer_size, size_t recv_buf_size);
 

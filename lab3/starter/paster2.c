@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
 	if(catpng(51, filenames) != 0) {
 		perror("catpng");
 		for (int i = 0; i < 51; ++i) {
-			remove(filenames[i]);
+			/*remove(filenames[i]);*/
 			free(filenames[i]);
 		}
 	}
@@ -211,7 +211,8 @@ int consumer(Buffer* b, multipc* pc, int sleep_time) {
 			pthread_mutex_lock(&pc->shared_mutex);
 
 			//Pop the image read from the queue
-			Buffer_pop(b, recv_buf, IMG_SIZE);
+			if (Buffer_pop(b, recv_buf, IMG_SIZE)) {/*puts("buffer pop anomaly");*/}
+			/*printf("%d consumed item %d from the buffer\n", k, recv_buf->seq);*/
 
 			pthread_mutex_unlock(&pc->shared_mutex);
 			sem_post(&pc->shared_spaces);
@@ -279,7 +280,10 @@ int producer(Buffer* b, multipc* pc, int img_no) {
 		sem_wait(&pc->shared_spaces);
 		pthread_mutex_lock(&pc->shared_mutex);
 
-		Buffer_add(b, recv_buf, IMG_SIZE);
+		if (Buffer_add(b, recv_buf, IMG_SIZE)) {
+			//puts("buffer_add anomaly");
+		}
+		//printf("added segment %d to the buffer\n", recv_buf->seq);
 
 		pthread_mutex_unlock(&pc->shared_mutex);
 		sem_post(&pc->shared_items);
