@@ -1,0 +1,16 @@
+./main.out: URL is http://ece252-1.uwaterloo.ca/lab3/index.html
+HTTP/1.1 302 Found
+Date: Mon, 09 Nov 2020 19:36:53 GMT
+Server: Apache/2.4.41 (Ubuntu)
+Location: http://ece252-1.uwaterloo.ca/~yqhuang/lab3/index.html
+Content-Length: 324
+Content-Type: text/html; charset=iso-8859-1
+
+HTTP/1.1 404 Not Found
+Date: Mon, 09 Nov 2020 19:36:53 GMT
+Server: Apache/2.4.41 (Ubuntu)
+Content-Length: 283
+Content-Type: text/html; charset=iso-8859-1
+
+283 bytes received in memory 0x7fa72ff0f010, seq=-1.
+Response code: 404

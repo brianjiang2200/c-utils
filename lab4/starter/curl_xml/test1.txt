@@ -1,0 +1,40 @@
+./main.out: URL is http://ece252-1.uwaterloo.ca/lab4
+HTTP/1.1 302 Found
+Date: Mon, 09 Nov 2020 19:36:32 GMT
+Server: Apache/2.4.41 (Ubuntu)
+Location: http://ece252-1.uwaterloo.ca/~yqhuang/lab4
+Content-Length: 313
+Content-Type: text/html; charset=iso-8859-1
+
+HTTP/1.1 301 Moved Permanently
+Date: Mon, 09 Nov 2020 19:36:32 GMT
+Server: Apache/2.4.41 (Ubuntu)
+Location: http://ece252-1.uwaterloo.ca/~yqhuang/lab4/
+Content-Length: 338
+Content-Type: text/html; charset=iso-8859-1
+
+HTTP/1.1 200 OK
+Date: Mon, 09 Nov 2020 19:36:32 GMT
+Server: Apache/2.4.41 (Ubuntu)
+Last-Modified: Wed, 24 Jul 2019 13:13:27 GMT
+ETag: "9a6-58e6d132b00c5-gzip"
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: gzip
+Content-Length: 1107
+Content-Type: text/html
+
+2470 bytes received in memory 0x7fda0c46f010, seq=-1.
+Response code: 200
+Content-Type: text/html, len=9
+href: http://ece252-1.uwaterloo.ca/~yqhuang/lab4/sub1/index.html
+href: http://ece252-1.uwaterloo.ca:2540/image?q=gAAAAABdHkoqPlVGPQPMpFG8Vjvrodu_pZqXMC4jGRiLcYwY6MkhhFG1m5a3x5ZYDOiLGFmz8FTbq3sAva7QKiXY5YNIxrBdxg==
+href: http://ece252-3.uwaterloo.ca:2540/image?q=gAAAAABdHkoqOKR-cFRCkiCUBEMAAAWfDvBFlRisL9ysLWHYHbcQbn1b28PV_uHBZ0gJf5bvzrnf1HNXxB6KRlAVETwTIqBH2Q==
+href: http://ece252-1.uwaterloo.ca:2531/image?img=1&part=0
+href: http://ece252-1.uwaterloo.ca/~yqhuang/lab4/imgs/Disguise.png
+href: http://ece252-1.uwaterloo.ca/~yqhuang/lab4/imgs/crawler_arch.jpg
+href: http://ece252-1.uwaterloo.ca/~yqhuang/lab4/imgs/para.jpg
+href: http://ece252-1.uwaterloo.ca/lab4
+href: http://ece252-1.uwaterloo.ca:2540/image?q=gAAAAABdHkoqPlVGPQPMpFG8Vjvrodu_pZqXMC4jGRiLcYwY6MkhhFG1m5a3x5ZYDOiLGFmz8FTbq3sAva7QKiXY5YNIxrBdxg==
+href: http://ece252-1.uwaterloo.ca/~yqhuang/lab4/imgs/cpp.jpg
+href: http://ece252-1.uwaterloo.ca/~yqhuang/lab4/#top

@@ -25,6 +25,7 @@ int main(int argc, char** argv) {
 	}
 	times[0] = (tv.tv_sec) + tv.tv_usec/1000000.;
 
+	/*arguments*/
 	int no_threads = 1;
 	int num_urls = 50;
 	int logging = 0;
