@@ -12,19 +12,15 @@ LDLIBS_CURL = $(shell curl-config --libs)
 LDLIBS = $(LDLIBS_XML2) $(LDLIBS_CURL)
 
 SRCS   = curl_xml.c findpng2.c
+HEADERS = curl_xml.h
 OBJS3  = findpng2.o
 TARGETS= findpng2
 
 all: ${TARGETS}
 
-findpng2: $(OBJS3)
-	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS)
-
-%.o: %.c %.h
-	$(CC) $(CFLAGS) -c $<
-
--include $(SRCS:.c=.d)
+findpng2: $(HEADERS) $(SRCS)
+	$(LD) -o findpng2 $(SRCS) $(CFLAGS) $(LDLIBS) $(LDFLAGS)
 
 .PHONY: clean
 clean:
-	rm -f *~ *.d *.o $(TARGETS) *.png *.html
+	rm -f *~ *.d *.o *.gch $(TARGETS) *.png *.html

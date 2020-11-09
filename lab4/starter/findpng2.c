@@ -12,8 +12,13 @@
 #include <curl/curl.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include "curl_xml.h"
 
 int main(int argc, char** argv) {
+
+	if (argc < 2) {
+		return -1;
+	}
 
 	double times[2];
 	struct timeval tv;
@@ -32,6 +37,7 @@ int main(int argc, char** argv) {
 	char logfile[64];
 	memset(logfile, 0, 64);
 	int c;
+	/*argv[argc - 1] is the seed URL*/
 
 	while ((c = getopt(argc, argv, "t:m:v:")) != -1) {
 		switch(c) {
@@ -50,6 +56,25 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
+
+	/*test code*/
+
+	CURL *curl_handle;
+	CURLcode res;
+	RECV_BUF recv_buf;
+
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+	curl_handle = easy_handle_init(&recv_buf, argv[argc-1]);
+	if (curl_handle == NULL) {
+		abort();
+	}
+	res = curl_easy_perform(curl_handle);
+	process_data(curl_handle, &recv_buf);
+	cleanup(curl_handle, &recv_buf);
+
+	/*test code ends here*/
+
 	/*record time after program execution is finished*/
 	if (gettimeofday(&tv, NULL) != 0) {
 		perror("gettimeofday");
@@ -57,6 +82,8 @@ int main(int argc, char** argv) {
 	}
 	times[1] = (tv.tv_sec) + tv.tv_usec/1000000.;
 	printf("findpng2 execution time: %.6lf seconds\n", times[1] - times[0]);
+
+	free(threads);
 
 	return 0;
 }
