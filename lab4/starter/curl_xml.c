@@ -81,7 +81,7 @@ htmlDocPtr mem_getdoc(char *buf, int size, const char *url)
     int opts = HTML_PARSE_NOBLANKS | HTML_PARSE_NOERROR | \
                HTML_PARSE_NOWARNING | HTML_PARSE_NONET;
     htmlDocPtr doc = htmlReadMemory(buf, size, url, NULL, opts);
-    
+
     if ( doc == NULL ) {
         fprintf(stderr, "Document not parsed successfully.\n");
         return NULL;
@@ -91,7 +91,6 @@ htmlDocPtr mem_getdoc(char *buf, int size, const char *url)
 
 xmlXPathObjectPtr getnodeset (xmlDocPtr doc, xmlChar *xpath)
 {
-	
     xmlXPathContextPtr context;
     xmlXPathObjectPtr result;
 
@@ -123,7 +122,7 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
     xmlNodeSetPtr nodeset;
     xmlXPathObjectPtr result;
     xmlChar *href;
-		
+
     if (buf == NULL) {
         return 1;
     }
@@ -221,7 +220,7 @@ size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
 int recv_buf_init(RECV_BUF *ptr, size_t max_size)
 {
     void *p = NULL;
-    
+
     if (ptr == NULL) {
         return 1;
     }
@@ -230,7 +229,7 @@ int recv_buf_init(RECV_BUF *ptr, size_t max_size)
     if (p == NULL) {
 	return 2;
     }
-    
+
     ptr->buf = p;
     ptr->size = 0;
     ptr->max_size = max_size;
@@ -243,7 +242,7 @@ int recv_buf_cleanup(RECV_BUF *ptr)
     if (ptr == NULL) {
 	return 1;
     }
-    
+
     free(ptr->buf);
     ptr->size = 0;
     ptr->max_size = 0;
@@ -430,44 +429,3 @@ int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf)
     return write_file(fname, p_recv_buf->buf, p_recv_buf->size);
 }
 
-int main( int argc, char** argv ) 
-{
-    CURL *curl_handle;
-    CURLcode res;
-    char url[256];
-    RECV_BUF recv_buf;
-        
-    if (argc == 1) {
-        strcpy(url, SEED_URL); 
-    } else {
-        strcpy(url, argv[1]);
-    }
-    printf("%s: URL is %s\n", argv[0], url);
-
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    curl_handle = easy_handle_init(&recv_buf, url);
-
-    if ( curl_handle == NULL ) {
-        fprintf(stderr, "Curl initialization failed. Exiting...\n");
-        curl_global_cleanup();
-        abort();
-    }
-    /* get it! */
-    res = curl_easy_perform(curl_handle);
-
-    if( res != CURLE_OK) {
-        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-        cleanup(curl_handle, &recv_buf);
-        exit(1);
-    } else {
-	printf("%lu bytes received in memory %p, seq=%d.\n", \
-               recv_buf.size, recv_buf.buf, recv_buf.seq);
-    }
-
-    /* process the download data */
-    process_data(curl_handle, &recv_buf);
-
-    /* cleaning up */
-    cleanup(curl_handle, &recv_buf);
-    return 0;
-}

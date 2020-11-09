@@ -18,12 +18,36 @@ int main(int argc, char** argv) {
 	double times[2];
 	struct timeval tv;
 
-	/*record time before first process*/
+	/*record time before program execution*/
 	if (gettimeofday(&tv, NULL) != 0) {
 		perror("gettimeofday");
 		abort();
 	}
 	times[0] = (tv.tv_sec) + tv.tv_usec/1000000.;
+
+	int no_threads = 1;
+	int num_urls = 50;
+	int logging = 0;
+	char logfile[64];
+	memset(logfile, 0, 64);
+	int c;
+
+	while ((c = getopt(argc, argv, "t:m:v:")) != -1) {
+		switch(c) {
+		case 't':
+			no_threads = strtoul(optarg, NULL, 10);
+			break;
+		case 'm':
+			num_urls = strtoul(optarg, NULL, 10);
+			break;
+		case 'v':
+			logging = 1;
+			sprintf(logfile, optarg, sizeof(optarg));
+			break;
+		default:
+			break;
+		}
+	}
 
 	/*record time after program execution is finished*/
 	if (gettimeofday(&tv, NULL) != 0) {
