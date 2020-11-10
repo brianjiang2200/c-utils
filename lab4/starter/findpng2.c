@@ -34,12 +34,40 @@ typedef struct dummy3
 {
 	frontier_node* fhead;
 	png_node* phead;
-	unsigned int* pngs_collected
+	int* pngs_collected;
+	int target;
 } thread_args;
 
 /*work to be performed by threads*/
 void* work(void* arg) {
 	thread_args *p_in = arg;
+	ENTRY e, *ep;
+	CURL *curl_handle;
+	CURLcode res;
+
+	while (p_in->fhead != NULL && *p_in->pngs_collected < p_in->target) {
+		frontier_node* popped = p_in->fhead;
+		p_in->fhead = p_in->fhead->next;
+		/*check if URL already in visited*/
+		e.key = popped->url;
+		e.data = (void*) *p_in->pngs_collected;
+		ep = hsearch(e, FIND);
+		if (ep == NULL) {
+			break;
+		}
+		ep = hsearch(e, ENTER);
+		/*print URL to log file*/
+
+		/*CURL popped URL*/
+        	RECV_BUF recv_buf;
+		curl_handle = easy_handle_init(&recv_buf, popped->url);
+		if (curl_handle == NULL) {
+			abort();
+		}
+		res = curl_easy_perform(curl_handle);
+		process_data(curl_handle, &recv_buf);
+		cleanup(curl_handle, &recv_buf);
+	}
 	return NULL;
 }
 
@@ -95,24 +123,10 @@ int main(int argc, char** argv) {
 	hcreate(2 * num_urls);
 	/*init PNG result list*/
 	png_node* phead = NULL;
-	unsigned int pngs_collected = 0;
+	int pngs_collected = 0;
 
-	/*test code*/
-
-	/*CURL *curl_handle;
-	CURLcode res;
-	RECV_BUF recv_buf;
-
+	/*curl init*/
 	curl_global_init(CURL_GLOBAL_DEFAULT);
-	curl_handle = easy_handle_init(&recv_buf, argv[argc-1]);
-	if (curl_handle == NULL) {
-		abort();
-	}
-	res = curl_easy_perform(curl_handle);
-	process_data(curl_handle, &recv_buf);
-	cleanup(curl_handle, &recv_buf);*/
-
-	/*test code ends here*/
 
 	/*record time after program execution is finished*/
 	if (gettimeofday(&tv, NULL) != 0) {
@@ -122,6 +136,7 @@ int main(int argc, char** argv) {
 	times[1] = (tv.tv_sec) + tv.tv_usec/1000000.;
 	printf("findpng2 execution time: %.6lf seconds\n", times[1] - times[0]);
 
+	curl_global_cleanup();
 	free(threads);
 	free(fhead);
 	hdestroy();
