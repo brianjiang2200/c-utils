@@ -30,6 +30,19 @@ typedef struct dummy2
 	struct dummy2* next;
 } png_node;
 
+typedef struct dummy3
+{
+	frontier_node* fhead;
+	png_node* phead;
+	unsigned int* pngs_collected
+} thread_args;
+
+/*work to be performed by threads*/
+void* work(void* arg) {
+	thread_args *p_in = arg;
+	return NULL;
+}
+
 int main(int argc, char** argv) {
 
 	if (argc < 2) {
