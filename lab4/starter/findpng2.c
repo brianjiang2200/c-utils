@@ -36,6 +36,7 @@ typedef struct dummy3
 	png_node* phead;
 	int* pngs_collected;
 	int target;
+	char logfile[64];
 } thread_args;
 
 /*work to be performed by threads*/
@@ -46,19 +47,27 @@ void* work(void* arg) {
 	CURLcode res;
 
 	while (p_in->fhead != NULL && *p_in->pngs_collected < p_in->target) {
+
+		/*pop the next element in frontier*/
 		frontier_node* popped = p_in->fhead;
 		p_in->fhead = p_in->fhead->next;
-		/*check if URL already in visited*/
 		e.key = popped->url;
 		e.data = (void*) *p_in->pngs_collected;
 		ep = hsearch(e, FIND);
-		if (ep == NULL) {
+
+		/*if already in visited, break*/
+		if (ep != NULL) {	//represents successful search
 			break;
 		}
 		ep = hsearch(e, ENTER);
-		/*print URL to log file*/
 
-		/*CURL popped URL*/
+		/*NEED TO ADD POPPED FRONTIER NODE TO VISITED?*/
+
+		/*print the URL to log file*/
+		FILE *fp = fopen(p_in->logfile, a);
+		fwrite(e.key, strlen(e.key), 1, fp);
+
+		/*CURL the popped URL*/
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, popped->url);
 		if (curl_handle == NULL) {
@@ -66,7 +75,41 @@ void* work(void* arg) {
 		}
 		res = curl_easy_perform(curl_handle);
 		process_data(curl_handle, &recv_buf);
+
+//extract content type manually (NEEDED?)
+		char *ct = NULL;
+		res = curl_easy_getinfo(curl_handle, CURLINFO_CONTENT_TYPE, &ct);
+		if ( res == CURLE_OK && ct != NULL ) {
+			printf("Content-Type: %s, len=%ld\n", ct, strlen(ct));
+		} else {
+			fprintf(stderr, "Failed obtain Content-Type\n");
+			return 2;
+		}
+//
+
 		cleanup(curl_handle, &recv_buf);
+
+		/*if type is image*/
+		if (ct == "image/png") {
+
+			/*add to PNG hash table*/
+
+
+			/*atomically increment PNG counter*/
+
+
+			/*if last_element, time to terminate all threads*/
+
+
+		}
+		/*if type is text*/
+		else if (ct == "text/html") {
+
+			/*process the data, and add new urls to frontier*/
+
+
+		}
+
 	}
 	return NULL;
 }
@@ -124,6 +167,24 @@ int main(int argc, char** argv) {
 	/*init PNG result list*/
 	png_node* phead = NULL;
 	int pngs_collected = 0;
+
+//SINGLE-THREADED
+
+//	work();	//fill arguments as necessary
+
+//
+
+/*MULTI-THREADED
+
+	thread_args *p_in;
+
+//	p_in->fhead =
+//	p_in->phead =
+//	p_in->pngs_collected =
+	p_in->target = num_urls;
+	p_in->logfile = logfile;
+
+*/
 
 	/*curl init*/
 	curl_global_init(CURL_GLOBAL_DEFAULT);
