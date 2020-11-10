@@ -1,4 +1,5 @@
 #define _DEFAULT_SOURCE
+#define _GNU_SOURCE
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,7 +13,22 @@
 #include <curl/curl.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <search.h>
 #include "curl_xml.h"
+
+/*nodes in frontier linked list*/
+typedef struct dummy1
+{
+	char* url;
+	struct dummy1* next;
+} frontier_node;
+
+/*PNG Node*/
+typedef struct dummy2
+{
+	char* url;
+	struct dummy2* next;
+} png_node;
 
 int main(int argc, char** argv) {
 
@@ -56,11 +72,21 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	/*thread init*/
 	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
+	/*init URL frontier*/
+	frontier_node* fhead = malloc(sizeof(frontier_node));
+	memcpy(fhead->url, argv[argc-1], strlen(argv[argc-1]));
+	fhead->next = NULL;
+	/*init glib hash table for visited URLS*/
+	hcreate(2 * num_urls);
+	/*init PNG result list*/
+	png_node* phead = NULL;
+	unsigned int pngs_collected = 0;
 
 	/*test code*/
 
-	CURL *curl_handle;
+	/*CURL *curl_handle;
 	CURLcode res;
 	RECV_BUF recv_buf;
 
@@ -71,7 +97,7 @@ int main(int argc, char** argv) {
 	}
 	res = curl_easy_perform(curl_handle);
 	process_data(curl_handle, &recv_buf);
-	cleanup(curl_handle, &recv_buf);
+	cleanup(curl_handle, &recv_buf);*/
 
 	/*test code ends here*/
 
@@ -84,6 +110,8 @@ int main(int argc, char** argv) {
 	printf("findpng2 execution time: %.6lf seconds\n", times[1] - times[0]);
 
 	free(threads);
+	free(fhead);
+	hdestroy();
 
 	return 0;
 }
