@@ -15,34 +15,12 @@
 #include <semaphore.h>
 #include <search.h>
 #include "curl_xml.h"
+#include "findpng2.h"
 
 #define CT_PNG "image/png"
 #define CT_HTML "text/html"
 #define CT_PNG_LEN 9
 #define CT_HTML_LEN 9
-
-/*nodes in frontier linked list*/
-typedef struct dummy1
-{
-	char* url;
-	struct dummy1* next;
-} frontier_node;
-
-/*PNG Node*/
-typedef struct dummy2
-{
-	char* url;
-	struct dummy2* next;
-} png_node;
-
-typedef struct dummy3
-{
-	frontier_node* fhead;
-	png_node* phead;
-	int* pngs_collected;
-	int target;
-	char* logfile;
-} thread_args;
 
 /*work to be performed by threads*/
 void* work(void* arg) {
