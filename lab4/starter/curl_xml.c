@@ -92,7 +92,7 @@ xmlXPathObjectPtr getnodeset (xmlDocPtr doc, xmlChar *xpath)
     return result;
 }
 
-int find_http(char *buf, int size, int follow_relative_links, const char *base_url)
+int find_http(char *buf, int size, int follow_relative_links, const char *base_url, void* arg)
 {
 
     int i;
@@ -338,7 +338,7 @@ CURL *easy_handle_init(RECV_BUF *ptr, const char *url)
     return curl_handle;
 }
 
-int process_html(CURL *curl_handle, RECV_BUF *p_recv_buf)
+int process_html(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 {
     char fname[256];
     int follow_relative_link = 1;
@@ -346,12 +346,12 @@ int process_html(CURL *curl_handle, RECV_BUF *p_recv_buf)
     pid_t pid =getpid();
 
     curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &url);
-    find_http(p_recv_buf->buf, p_recv_buf->size, follow_relative_link, url); 
+    find_http(p_recv_buf->buf, p_recv_buf->size, follow_relative_link, url, arg); 
     sprintf(fname, "./output_%d.html", pid);
     return write_file(fname, p_recv_buf->buf, p_recv_buf->size);
 }
 
-int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf)
+int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 {
     pid_t pid =getpid();
     char fname[256];
@@ -371,7 +371,7 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf)
  * @return 0 on success; non-zero otherwise
  */
 
-int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf)
+int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 {
     CURLcode res;
     char fname[256];
@@ -398,9 +398,9 @@ int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf)
     }
 
     if ( strstr(ct, CT_HTML) ) {
-        return process_html(curl_handle, p_recv_buf);
+        return process_html(curl_handle, p_recv_buf, arg);
     } else if ( strstr(ct, CT_PNG) ) {
-        return process_png(curl_handle, p_recv_buf);
+        return process_png(curl_handle, p_recv_buf, arg);
     } else {
         sprintf(fname, "./output_%d", pid);
     }

@@ -16,6 +16,11 @@
 #include <search.h>
 #include "curl_xml.h"
 
+#define CT_PNG "image/png"
+#define CT_HTML "text/html"
+#define CT_PNG_LEN 9
+#define CT_HTML_LEN 9
+
 /*nodes in frontier linked list*/
 typedef struct dummy1
 {
@@ -36,7 +41,7 @@ typedef struct dummy3
 	png_node* phead;
 	int* pngs_collected;
 	int target;
-	char logfile[64];
+	char* logfile;
 } thread_args;
 
 /*work to be performed by threads*/
@@ -61,10 +66,10 @@ void* work(void* arg) {
 		}
 		ep = hsearch(e, ENTER);
 
-		/*NEED TO ADD POPPED FRONTIER NODE TO VISITED?*/
+		/*hsearch with ENTER flag enters the element if its not already there*/
 
 		/*print the URL to log file*/
-		FILE *fp = fopen(p_in->logfile, a);
+		FILE *fp = fopen(p_in->logfile, "a");
 		fwrite(e.key, strlen(e.key), 1, fp);
 
 		/*CURL the popped URL*/
@@ -74,43 +79,13 @@ void* work(void* arg) {
 			abort();
 		}
 		res = curl_easy_perform(curl_handle);
-		process_data(curl_handle, &recv_buf);
-
-//extract content type manually (NEEDED?)
-		char *ct = NULL;
-		res = curl_easy_getinfo(curl_handle, CURLINFO_CONTENT_TYPE, &ct);
-		if ( res == CURLE_OK && ct != NULL ) {
-			printf("Content-Type: %s, len=%ld\n", ct, strlen(ct));
-		} else {
-			fprintf(stderr, "Failed obtain Content-Type\n");
-			return 2;
-		}
-//
+		/*data processing handled externally*/
+		process_data(curl_handle, &recv_buf, arg);
 
 		cleanup(curl_handle, &recv_buf);
 
-		/*if type is image*/
-		if (ct == "image/png") {
-
-			/*add to PNG hash table*/
-
-
-			/*atomically increment PNG counter*/
-
-
-			/*if last_element, time to terminate all threads*/
-
-
-		}
-		/*if type is text*/
-		else if (ct == "text/html") {
-
-			/*process the data, and add new urls to frontier*/
-
-
-		}
-
 	}
+
 	return NULL;
 }
 
@@ -169,20 +144,15 @@ int main(int argc, char** argv) {
 	int pngs_collected = 0;
 
 //SINGLE-THREADED
-
-//	work();	//fill arguments as necessary
-
+	thread_args *p_in = malloc(sizeof(thread_args));
+	p_in->fhead = fhead;
+	p_in->phead = phead;
+	p_in->pngs_collected = &pngs_collected;
+	p_in->target = num_urls;
+	p_in->logfile = logfile;
 //
 
 /*MULTI-THREADED
-
-	thread_args *p_in;
-
-//	p_in->fhead =
-//	p_in->phead =
-//	p_in->pngs_collected =
-	p_in->target = num_urls;
-	p_in->logfile = logfile;
 
 */
 
@@ -198,6 +168,7 @@ int main(int argc, char** argv) {
 	printf("findpng2 execution time: %.6lf seconds\n", times[1] - times[0]);
 
 	curl_global_cleanup();
+	free(p_in);
 	free(threads);
 	free(fhead);
 	hdestroy();
