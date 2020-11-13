@@ -26,4 +26,4 @@ test1: findpng2
 
 .PHONY: clean
 clean:
-	rm -f *~ *.d *.o *.gch $(TARGETS) *.png *.html output*
+	rm -f *~ *.d *.o *.gch $(TARGETS) *.png *.html *.txt output*

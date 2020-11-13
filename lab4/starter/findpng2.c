@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <search.h>
+#include <fcntl.h>
 #include "curl_xml.h"
 #include "findpng2.h"
 
@@ -166,6 +167,16 @@ int main(int argc, char** argv) {
         pthread_create(threads, NULL, work, p_in);
 
 	pthread_join(threads[0], NULL);
+
+	/*Print PNG URLs to png.urls.txt, this will create an empty file even if nothing to print*/
+	FILE* fp_pngs;
+	fp_pngs = fopen("png_urls.txt", "w");
+	png_node* png_stepper = p_in->phead;
+	while (png_stepper != NULL) {
+		fprintf(fp_pngs, "%s\n", png_stepper->url);
+		png_stepper = png_stepper->next;
+	}
+	fclose(fp_pngs);
 
 	/*record time after program execution is finished*/
 	if (gettimeofday(&tv, NULL) != 0) {
