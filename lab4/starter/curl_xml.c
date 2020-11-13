@@ -383,13 +383,20 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
     char *eurl = NULL;          /* effective URL */
     curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &eurl);
     if ( eurl != NULL) {
+
+//
         /*printf("The PNG url is: %s\n", eurl);*/
+	printf("FIRST BYTES: {%02X%02X%02X%02X}\n", (unsigned char)p_recv_buf->buf[0],
+		(unsigned char)p_recv_buf->buf[1], (unsigned char)p_recv_buf->buf[2],
+		(unsigned char)p_recv_buf->buf[3]);
+//
+
 	/*Check for valid PNG byte by byte*/
-	/*if (p_recv_buf->buf[0] == 0x89 && p_recv_buf->buf[1] == 0x50
-		&& p_recv_buf->buf[2] == 0x4e && p_recv_buf->buf[3] == 0x47
-		&& p_recv_buf->buf[4] == 0x0d && p_recv_buf->buf[5] == 0x0a
-		&& p_recv_buf->buf[6] == 0x1a && p_recv_buf->buf[7] == 0x0a) {*/
-			//printf("%02X%02X%02X%02X\n", p_recv_buf->buf[0], p_recv_buf->buf[1], p_recv_buf->buf[2], p_recv_buf->buf[3]);
+	if ((unsigned char)p_recv_buf->buf[0] == 0x89 && (unsigned char)p_recv_buf->buf[1] == 0x50
+		&& (unsigned char)p_recv_buf->buf[2] == 0x4e && (unsigned char)p_recv_buf->buf[3] == 0x47
+		&& (unsigned char)p_recv_buf->buf[4] == 0x0d && (unsigned char)p_recv_buf->buf[5] == 0x0a
+		&& (unsigned char)p_recv_buf->buf[6] == 0x1a && (unsigned char)p_recv_buf->buf[7] == 0x0a) {
+
 			/*---add PNG url to the PNG Linked List*/
 			png_node* new_node = malloc(sizeof(png_node));
 			new_node->url = malloc(URL_LENGTH * sizeof(char));
@@ -400,7 +407,7 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 			*p_in->pngs_collected = __sync_add_and_fetch(p_in->pngs_collected, 1);
 			printf("PNG COUNT: %d\n", *p_in->pngs_collected);
 			/*---*/
-	/*}*/
+	}
     }
 
     sprintf(fname, "./output_%d_%d.png", p_recv_buf->seq, pid);
