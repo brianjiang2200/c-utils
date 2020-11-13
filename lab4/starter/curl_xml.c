@@ -119,6 +119,9 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
             }
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
                 printf("href: %s\n", href);
+		/*---add URL to the frontier*/
+			
+		/*---*/
             }
             xmlFree(href);
         }
@@ -342,28 +345,42 @@ int process_html(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 {
     char fname[256];
     int follow_relative_link = 1;
-    char *url = NULL; 
+    char *url = NULL;
     pid_t pid =getpid();
 
     curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &url);
-    find_http(p_recv_buf->buf, p_recv_buf->size, follow_relative_link, url, arg); 
-    sprintf(fname, "./output_%d.html", pid);
-    return write_file(fname, p_recv_buf->buf, p_recv_buf->size);
+    find_http(p_recv_buf->buf, p_recv_buf->size, follow_relative_link, url, arg);
+    /*sprintf(fname, "./output_%d.html", pid);
+    return write_file(fname, p_recv_buf->buf, p_recv_buf->size);*/
+ 	return 0;
 }
 
 int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 {
+	/*---*/
+	thread_args *p_in = arg;
+	/*---*/
+
     pid_t pid =getpid();
     char fname[256];
     char *eurl = NULL;          /* effective URL */
     curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &eurl);
     if ( eurl != NULL) {
         printf("The PNG url is: %s\n", eurl);
+	/*---add PNG url to the PNG Linked List*/
+	png_node* new_node = malloc(sizeof(png_node));
+	new_node->url = eurl;
+	new_node->next = p_in->phead;
+	p_in->head = new_node;
+	p_in->*pngs_collected++;
+	/*---*/
     }
 
-    sprintf(fname, "./output_%d_%d.png", p_recv_buf->seq, pid);
-    return write_file(fname, p_recv_buf->buf, p_recv_buf->size);
+    /*sprintf(fname, "./output_%d_%d.png", p_recv_buf->seq, pid);
+    return write_file(fname, p_recv_buf->buf, p_recv_buf->size);*/
+	return 0;
 }
+
 /**
  * @brief process teh download data by curl
  * @param CURL *curl_handle is the curl handler
@@ -383,7 +400,7 @@ int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 	    printf("Response code: %ld\n", response_code);
     }
 
-    if ( response_code >= 400 ) { 
+    if ( response_code >= 400 ) {
     	fprintf(stderr, "Error.\n");
         return 1;
     }
@@ -402,6 +419,7 @@ int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
     } else if ( strstr(ct, CT_PNG) ) {
         return process_png(curl_handle, p_recv_buf, arg);
     } else {
+	/*this case should usually not occur*/
         sprintf(fname, "./output_%d", pid);
     }
 
