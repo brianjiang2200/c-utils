@@ -383,8 +383,8 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 	png_node* new_node = malloc(sizeof(png_node));
 	new_node->url = eurl;
 	new_node->next = p_in->phead;
-	p_in->fhead = new_node;
-	*p_in->pngs_collected++;
+	p_in->phead = new_node;
+	*p_in->pngs_collected = __sync_add_and_fetch(p_in->pngs_collected, 1);
 	/*---*/
     }
 

@@ -19,7 +19,7 @@ TARGETS= findpng2
 all: ${TARGETS}
 
 findpng2: $(HEADERS) $(SRCS)
-	$(LD) -o findpng2 $(SRCS) $(CFLAGS) $(LDLIBS) $(LDFLAGS)
+	$(LD) -o findpng2 $(SRCS) -pthread $(CFLAGS) $(LDLIBS) $(LDFLAGS)
 
 .PHONY: clean
 clean:

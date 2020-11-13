@@ -59,6 +59,10 @@ void* work(void* arg) {
 			abort();
 		}
 		res = curl_easy_perform(curl_handle);
+		if (res != CURLE_OK) {
+			cleanup(curl_handle, &recv_buf);
+			exit (-4);
+		}
 		/*data processing handled externally*/
 		process_data(curl_handle, &recv_buf, arg);
 
@@ -124,7 +128,7 @@ int main(int argc, char** argv) {
 	png_node* phead = NULL;
 	int pngs_collected = 0;
 
-//SINGLE-THREADED
+	//SINGLE-THREADED
 	thread_args *p_in = malloc(sizeof(thread_args));
 	p_in->fhead = fhead;
 	p_in->ftail = ftail;
@@ -132,14 +136,19 @@ int main(int argc, char** argv) {
 	p_in->pngs_collected = &pngs_collected;
 	p_in->target = num_urls;
 	p_in->logfile = logfile;
-//
+	//
 
-/*MULTI-THREADED
+	/*MULTI-THREADED
 
-*/
+	*/
 
 	/*curl init*/
 	curl_global_init(CURL_GLOBAL_DEFAULT);
+
+	/*thread create*/
+        pthread_create(threads, NULL, work, p_in);
+
+	pthread_join(threads[0], NULL);
 
 	/*record time after program execution is finished*/
 	if (gettimeofday(&tv, NULL) != 0) {
