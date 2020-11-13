@@ -21,6 +21,7 @@
 #define CT_HTML "text/html"
 #define CT_PNG_LEN 9
 #define CT_HTML_LEN 9
+#define URL_LENGTH 256
 
 int logging = 0;
 
@@ -74,6 +75,8 @@ void* work(void* arg) {
 		/*data processing handled externally*/
 		process_data(curl_handle, &recv_buf, arg);
 
+		free(popped->url);
+		free(popped);
 		cleanup(curl_handle, &recv_buf);
 
 	}
@@ -126,9 +129,9 @@ int main(int argc, char** argv) {
 	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
 	/*init URL frontier*/
 	frontier_node* fhead = malloc(sizeof(frontier_node));
-	fhead->url = malloc(128 * sizeof(char));
-	memset(fhead->url, 0, 128);
-	memcpy(fhead->url, argv[argc-1], strlen(argv[argc-1]));
+	fhead->url = malloc(URL_LENGTH * sizeof(char));
+	memset(fhead->url, 0, URL_LENGTH * sizeof(char));
+	memcpy(fhead->url, argv[argc-1], strlen(argv[argc-1]) * sizeof(char));
 	fhead->next = NULL;
 	frontier_node* ftail = fhead;
 	/*init glib hash table for visited URLS*/
