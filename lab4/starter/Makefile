@@ -22,7 +22,7 @@ findpng2: $(HEADERS) $(SRCS)
 	$(LD) -o findpng2 $(SRCS) -pthread $(CFLAGS) $(LDLIBS) $(LDFLAGS)
 
 test1: findpng2
-	./findpng2 -m 20 https://ece252-1.uwaterloo.ca/lab4
+	./findpng2 -m 20 http://ece252-1.uwaterloo.ca/lab4
 
 .PHONY: clean
 clean:

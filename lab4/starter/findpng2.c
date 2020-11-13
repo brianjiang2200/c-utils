@@ -52,7 +52,9 @@ void* work(void* arg) {
 
 		/*print the URL to log file*/
 		FILE *fp = fopen(p_in->logfile, "a");
-		fwrite(e.key, strlen(e.key), 1, fp);
+		if (fp != NULL) {
+			fwrite(e.key, strlen(e.key), 1, fp);
+		}
 
 		/*CURL the popped URL*/
         	RECV_BUF recv_buf;
@@ -60,13 +62,17 @@ void* work(void* arg) {
 		if (curl_handle == NULL) {
 			abort();
 		}
+		puts("3.3");
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
+			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
 			cleanup(curl_handle, &recv_buf);
 			exit (-4);
 		}
+		puts("3.5");
 		/*data processing handled externally*/
 		process_data(curl_handle, &recv_buf, arg);
+		puts("4");
 
 		cleanup(curl_handle, &recv_buf);
 
