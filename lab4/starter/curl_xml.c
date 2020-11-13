@@ -128,7 +128,6 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
 		/*---add URL to the frontier*/
 		frontier_node* new_node = malloc(sizeof(frontier_node));
 		new_node->url = malloc(URL_LENGTH * sizeof(char));
-		puts("html parser ok");
 		memset(new_node->url, 0, URL_LENGTH * sizeof(char));
 		memcpy(new_node->url, (char*)href, strlen((char*)href) * sizeof(char));
 		new_node->next = NULL;
@@ -388,7 +387,6 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 	/*---add PNG url to the PNG Linked List*/
 	png_node* new_node = malloc(sizeof(png_node));
 	new_node->url = malloc(URL_LENGTH * sizeof(char));
-	puts("png parser ok");
 	memset(new_node->url, 0, URL_LENGTH * sizeof(char));
 	memcpy(new_node->url, eurl, strlen(eurl) * sizeof(char));
 	new_node->next = p_in->phead;
