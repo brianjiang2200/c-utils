@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
 	fhead->next = NULL;
 	frontier_node* ftail = fhead;
 	/*init glib hash table for visited URLS*/
-	hcreate(2 * num_urls);
+	hcreate(20 * num_urls);
 	/*init PNG result list*/
 	png_node* phead = NULL;
 	int pngs_collected = 0;

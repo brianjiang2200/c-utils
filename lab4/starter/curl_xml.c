@@ -392,7 +392,6 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 	new_node->next = p_in->phead;
 	p_in->phead = new_node;
 	*p_in->pngs_collected = __sync_add_and_fetch(p_in->pngs_collected, 1);
-	printf("PNGS Collected: %d\n", *p_in->pngs_collected);
 	/*---*/
     }
 
