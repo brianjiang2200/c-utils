@@ -22,14 +22,14 @@
 #define CT_PNG_LEN 9
 #define CT_HTML_LEN 9
 
+int logging = 0;
+
 /*work to be performed by threads*/
 void* work(void* arg) {
 	thread_args *p_in = arg;
 	ENTRY e, *ep;
 	CURL *curl_handle;
 	CURLcode res;
-
-	puts("Hello from worker thread");
 
 	while (p_in->fhead != NULL && *p_in->pngs_collected < p_in->target) {
 
@@ -51,28 +51,28 @@ void* work(void* arg) {
 		/*hsearch with ENTER flag enters the element if its not already there*/
 
 		/*print the URL to log file*/
-		FILE *fp = fopen(p_in->logfile, "a");
-		if (fp != NULL) {
-			fwrite(e.key, strlen(e.key), 1, fp);
+		if (logging) {
+			FILE *fp = fopen(p_in->logfile, "a");
+			if (fp != NULL) {
+				fwrite(e.key, strlen(e.key), 1, fp);
+			}
 		}
 
 		/*CURL the popped URL*/
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, popped->url);
+		printf("GRABBING URL: %s\n", popped->url);
 		if (curl_handle == NULL) {
 			abort();
 		}
-		puts("3.3");
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
 			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
 			cleanup(curl_handle, &recv_buf);
 			exit (-4);
 		}
-		puts("3.5");
 		/*data processing handled externally*/
 		process_data(curl_handle, &recv_buf, arg);
-		puts("4");
 
 		cleanup(curl_handle, &recv_buf);
 
@@ -100,7 +100,6 @@ int main(int argc, char** argv) {
 	/*arguments*/
 	int no_threads = 1;
 	int num_urls = 50;
-	int logging = 0;
 	char logfile[64];
 	memset(logfile, 0, 64);
 	int c;
