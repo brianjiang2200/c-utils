@@ -20,6 +20,7 @@ typedef struct dummy2
 typedef struct dummmy3
 {
 	frontier_node* fhead;
+	frontier_node* ftail;
 	png_node* phead;
 	int* pngs_collected;
 	int target;

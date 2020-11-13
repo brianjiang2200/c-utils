@@ -34,6 +34,8 @@ void* work(void* arg) {
 		/*pop the next element in frontier*/
 		frontier_node* popped = p_in->fhead;
 		p_in->fhead = p_in->fhead->next;
+		if (p_in->fhead == NULL) p_in->ftail = NULL;
+
 		e.key = popped->url;
 		e.data = (void*) *p_in->pngs_collected;
 		ep = hsearch(e, FIND);
@@ -115,6 +117,7 @@ int main(int argc, char** argv) {
 	frontier_node* fhead = malloc(sizeof(frontier_node));
 	memcpy(fhead->url, argv[argc-1], strlen(argv[argc-1]));
 	fhead->next = NULL;
+	frontier_node* ftail = fhead;
 	/*init glib hash table for visited URLS*/
 	hcreate(2 * num_urls);
 	/*init PNG result list*/
@@ -124,6 +127,7 @@ int main(int argc, char** argv) {
 //SINGLE-THREADED
 	thread_args *p_in = malloc(sizeof(thread_args));
 	p_in->fhead = fhead;
+	p_in->ftail = ftail;
 	p_in->phead = phead;
 	p_in->pngs_collected = &pngs_collected;
 	p_in->target = num_urls;

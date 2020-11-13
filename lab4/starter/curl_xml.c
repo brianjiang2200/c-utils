@@ -94,6 +94,9 @@ xmlXPathObjectPtr getnodeset (xmlDocPtr doc, xmlChar *xpath)
 
 int find_http(char *buf, int size, int follow_relative_links, const char *base_url, void* arg)
 {
+	/*---*/
+	thread_args* p_in = arg;
+	/*---*/
 
     int i;
     htmlDocPtr doc;
@@ -120,7 +123,16 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
                 printf("href: %s\n", href);
 		/*---add URL to the frontier*/
-			
+		frontier_node* new_node = malloc(sizeof(frontier_node));
+		new_node->url = (char*) href;
+		new_node->next = NULL;
+		if (p_in->fhead != NULL) {
+			p_in->ftail->next = new_node;
+			p_in->ftail = new_node;
+		} else {
+			p_in->fhead = new_node;
+			p_in->ftail = new_node;
+		}
 		/*---*/
             }
             xmlFree(href);
@@ -343,10 +355,10 @@ CURL *easy_handle_init(RECV_BUF *ptr, const char *url)
 
 int process_html(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 {
-    char fname[256];
+    /*char fname[256];*/
     int follow_relative_link = 1;
     char *url = NULL;
-    pid_t pid =getpid();
+    /*pid_t pid =getpid();*/
 
     curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &url);
     find_http(p_recv_buf->buf, p_recv_buf->size, follow_relative_link, url, arg);
@@ -361,8 +373,8 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 	thread_args *p_in = arg;
 	/*---*/
 
-    pid_t pid =getpid();
-    char fname[256];
+    /*pid_t pid =getpid();
+    char fname[256];*/
     char *eurl = NULL;          /* effective URL */
     curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &eurl);
     if ( eurl != NULL) {
@@ -371,8 +383,8 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 	png_node* new_node = malloc(sizeof(png_node));
 	new_node->url = eurl;
 	new_node->next = p_in->phead;
-	p_in->head = new_node;
-	p_in->*pngs_collected++;
+	p_in->fhead = new_node;
+	*p_in->pngs_collected++;
 	/*---*/
     }
 
