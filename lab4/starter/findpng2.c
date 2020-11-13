@@ -29,6 +29,8 @@ void* work(void* arg) {
 	CURL *curl_handle;
 	CURLcode res;
 
+	puts("Hello from worker thread");
+
 	while (p_in->fhead != NULL && *p_in->pngs_collected < p_in->target) {
 
 		/*pop the next element in frontier*/
@@ -119,6 +121,8 @@ int main(int argc, char** argv) {
 	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
 	/*init URL frontier*/
 	frontier_node* fhead = malloc(sizeof(frontier_node));
+	fhead->url = malloc(128 * sizeof(char));
+	memset(fhead->url, 0, 128);
 	memcpy(fhead->url, argv[argc-1], strlen(argv[argc-1]));
 	fhead->next = NULL;
 	frontier_node* ftail = fhead;
