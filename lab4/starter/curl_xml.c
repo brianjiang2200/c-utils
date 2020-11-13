@@ -124,7 +124,7 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
                 xmlFree(old);
             }
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
-                printf("href: %s\n", href);
+                /*printf("href: %s\n", href);*/
 		/*---add URL to the frontier*/
 		frontier_node* new_node = malloc(sizeof(frontier_node));
 		new_node->url = malloc(URL_LENGTH * sizeof(char));
@@ -168,7 +168,7 @@ size_t header_cb_curl(char *p_recv, size_t size, size_t nmemb, void *userdata)
     RECV_BUF *p = userdata;
 
 #ifdef DEBUG1_
-    printf("%s", p_recv);
+    /*printf("%s", p_recv);*/
 #endif /* DEBUG1_ */
     if (realsize > strlen(ECE252_HEADER) &&
 	strncmp(p_recv, ECE252_HEADER, strlen(ECE252_HEADER)) == 0) {
@@ -383,7 +383,7 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
     char *eurl = NULL;          /* effective URL */
     curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &eurl);
     if ( eurl != NULL) {
-        printf("The PNG url is: %s\n", eurl);
+        /*printf("The PNG url is: %s\n", eurl);*/
 	/*---add PNG url to the PNG Linked List*/
 	png_node* new_node = malloc(sizeof(png_node));
 	new_node->url = malloc(URL_LENGTH * sizeof(char));
@@ -392,6 +392,7 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 	new_node->next = p_in->phead;
 	p_in->phead = new_node;
 	*p_in->pngs_collected = __sync_add_and_fetch(p_in->pngs_collected, 1);
+	printf("PNGS Collected: %d\n", *p_in->pngs_collected);
 	/*---*/
     }
 
@@ -416,7 +417,7 @@ int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 
     res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &response_code);
     if ( res == CURLE_OK ) {
-	    printf("Response code: %ld\n", response_code);
+	    /*printf("Response code: %ld\n", response_code);*/
     }
 
     if ( response_code >= 400 ) {

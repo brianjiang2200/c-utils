@@ -45,7 +45,9 @@ void* work(void* arg) {
 
 		/*if already in visited, break*/
 		if (ep != NULL) {	//represents successful search
-			break;
+			free(popped->url);
+			free(popped);
+			continue;
 		}
 		ep = hsearch(e, ENTER);
 
@@ -69,8 +71,11 @@ void* work(void* arg) {
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
 			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
+			free(popped->url);
+			free(popped);
 			cleanup(curl_handle, &recv_buf);
-			exit (-4);
+			/*keep trying*/
+			continue;
 		}
 		/*data processing handled externally*/
 		process_data(curl_handle, &recv_buf, arg);
@@ -170,10 +175,25 @@ int main(int argc, char** argv) {
 	times[1] = (tv.tv_sec) + tv.tv_usec/1000000.;
 	printf("findpng2 execution time: %.6lf seconds\n", times[1] - times[0]);
 
+	/*CLEANUP*/
 	curl_global_cleanup();
+	/*destroy linked lists*/
+	frontier_node* fstepper = p_in->fhead;
+	while (fstepper != NULL) {
+		frontier_node* tmp = fstepper;
+		fstepper = fstepper->next;
+		free(tmp->url);
+		free(tmp);
+	}
+	png_node* pstepper = p_in->phead;
+	while (pstepper != NULL) {
+		png_node* tmp = pstepper;
+		pstepper = pstepper->next;
+		free(tmp->url);
+		free(tmp);
+	}
 	free(p_in);
 	free(threads);
-	free(fhead);
 	hdestroy();
 
 	return 0;
