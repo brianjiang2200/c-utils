@@ -378,17 +378,11 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 	thread_args *p_in = arg;
 	/*---*/
 
-	pid_t pid = getpid();
-	char fname[256];
+	/*pid_t pid = getpid();
+	char fname[256];*/
 	char *eurl = NULL;          /* effective URL */
 	curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &eurl);
 	if ( eurl != NULL) {
-
-//TEST
-	printf("	FIRST BYTES: {%02X%02X%02X%02X}\n", (unsigned char)p_recv_buf->buf[0],
-		(unsigned char)p_recv_buf->buf[1], (unsigned char)p_recv_buf->buf[2],
-		(unsigned char)p_recv_buf->buf[3]);
-//
 
 		/*Check for valid PNG byte by byte*/
 		if ((unsigned char)p_recv_buf->buf[0] == 0x89 && (unsigned char)p_recv_buf->buf[1] == 0x50
@@ -417,9 +411,9 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 
 	}
 
-    sprintf(fname, "./output_%d_%d.png", p_recv_buf->seq, pid);
-    return write_file(fname, p_recv_buf->buf, p_recv_buf->size);
-	/*return 0;*/
+    /*sprintf(fname, "./output_%d_%d.png", p_recv_buf->seq, pid);
+    return write_file(fname, p_recv_buf->buf, p_recv_buf->size);*/
+	return 0;
 }
 
 /**

@@ -55,11 +55,6 @@ void* work(void* arg) {
 
 		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
-
-//TEST
-			puts("	ALREADY VISITED THIS URL!");
-//
-
 			continue;
 		}
 
@@ -96,6 +91,7 @@ void* work(void* arg) {
 		/*data processing handled externally (process_data => html/png)*/
 		process_data(curl_handle, &recv_buf, arg);
 
+		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY!!*/
 		cleanup(curl_handle, &recv_buf);
 
 	}
@@ -205,17 +201,8 @@ int main(int argc, char** argv) {
 
 	/*destroy frontier linked list*/
 
-//TEST
-	printf("\nFRONTIER\n");
-//
-
 	frontier_node* fstepper = p_in->fhead;
 	while (fstepper != NULL) {
-
-//TEST
-		printf("	%s\n", fstepper->url);
-//
-
 		frontier_node* tmp = fstepper;
 		fstepper = fstepper->next;
 		free(tmp->url);
@@ -224,17 +211,8 @@ int main(int argc, char** argv) {
 
 	/*destroy png linked list*/
 
-//TEST
-	printf("\nPNG\n");
-//
-
 	png_node* pstepper = p_in->phead;
 	while (pstepper != NULL) {
-
-//TEST
-		printf("        %s\n", pstepper->url);
-//
-
 		png_node* tmp = pstepper;
 		pstepper = pstepper->next;
 		free(tmp->url);
@@ -247,10 +225,6 @@ int main(int argc, char** argv) {
 
 	/*clean up visited hash table*/
 	hdestroy();
-
-	/*remove curled png files*/
-	/*cont*/
-
 
 	return 0;
 }
