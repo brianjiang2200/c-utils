@@ -37,6 +37,7 @@
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/uri.h>
+#include <pthread.h>
 #include "curl_xml.h"
 #include "findpng2.h"
 
@@ -131,6 +132,8 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
 		memset(new_node->url, 0, URL_LENGTH * sizeof(char));
 		memcpy(new_node->url, (char*)href, strlen((char*)href) * sizeof(char));
 		new_node->next = NULL;
+
+		pthread_mutex_lock(p_in->mut_frontier);
 		if (p_in->fhead != NULL) {
 			p_in->ftail->next = new_node;
 			p_in->ftail = new_node;
@@ -138,6 +141,8 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
 			p_in->fhead = new_node;
 			p_in->ftail = new_node;
 		}
+		pthread_mutex_unlock(p_in->mut_frontier);
+
 		/*---*/
             }
             xmlFree(href);
@@ -395,9 +400,12 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 			new_node->url = malloc(URL_LENGTH * sizeof(char));
 			memset(new_node->url, 0, URL_LENGTH * sizeof(char));
 			memcpy(new_node->url, eurl, strlen(eurl) * sizeof(char));
+
+			pthread_mutex_lock(p_in->mut_pngs);
 			new_node->next = p_in->phead;
 			p_in->phead = new_node;
 			*p_in->pngs_collected = __sync_add_and_fetch(p_in->pngs_collected, 1);
+			pthread_mutex_unlock(p_in->mut_pngs);
 
 //TEST
 			printf("		PNG COUNT: %d\n", *p_in->pngs_collected);
@@ -405,10 +413,6 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 
 			/*---*/
 		}
-
-	/*NEXT STEP: DELETE PNG URL FROM FRONTIER*/
-	/*---*/
-
 	}
 
     /*sprintf(fname, "./output_%d_%d.png", p_recv_buf->seq, pid);

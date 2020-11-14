@@ -71,6 +71,7 @@ void* work(void* arg) {
                 free(popped);
 
 		//Search VISITED hash table
+		pthread_rwlock_wrlock(p_in->rw_hash);
 		ep = hsearch(e, FIND);
 		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
@@ -79,13 +80,16 @@ void* work(void* arg) {
 
 		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
 		ep = hsearch(e, ENTER);
+		pthread_rwlock_unlock(p_in->rw_hash);
 
 		/*print the URL to log file*/
 		if (logging) {
+			pthread_mutex_lock(p_in->mut_log);
 			FILE *fp = fopen(p_in->logfile, "a");
 			if (fp != NULL) {
 				fwrite(e.key, strlen(e.key), 1, fp);
 			}
+			pthread_mutex_unlock(p_in->mut_log);
 		}
 
 		/*CURL the popped URL*/
