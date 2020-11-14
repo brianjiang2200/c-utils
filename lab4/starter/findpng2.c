@@ -42,8 +42,9 @@ void* work(void* arg) {
 		e.data = popped->url;	//THEORY: FOR ENTER FLAG, DATA IS INSERTED INTO HASH TABLE (REPRESENTS URL)?
 		/*unlink current head node (to be popped)*/
 		p_in->fhead = p_in->fhead->next;
+		/*maintain linked list consistent state and help to terminate loop when nothing left*/
+		if (p_in->fhead == NULL) p_in->ftail = NULL;
 		/*free popped node*/
-//		free(popped->url);
 		free(popped);
 
 //TEST
