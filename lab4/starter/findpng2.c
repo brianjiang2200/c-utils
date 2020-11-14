@@ -32,8 +32,10 @@ void* work(void* arg) {
 	ENTRY e, *ep;
 	CURL *curl_handle;
 	CURLcode res;
+	/*will use a boolean flag for the while loop*/
+	int contWork = 1;
 
-	while (p_in->fhead != NULL && *p_in->pngs_collected < p_in->target) {
+	while (contWork) {
 
 		pthread_mutex_lock(p_in->mut_frontier);				/*THREAD LOCK*/
 
@@ -51,13 +53,8 @@ void* work(void* arg) {
                 /*free popped node*/
                 free(popped);
 
-//TEST
-		printf("TRYING TO GRAB URL:	%s\n", e.key);
-//
-
 		//Search VISITED hash table
 		ep = hsearch(e, FIND);
-
 		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
 			continue;
@@ -77,11 +74,9 @@ void* work(void* arg) {
 		/*CURL the popped URL*/
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, e.key);
-
 //TEST
 		printf("	GRABBING URL:	%s\n", e.key);
 //
-
 		if (curl_handle == NULL) {
 			abort();
 		}
@@ -89,7 +84,6 @@ void* work(void* arg) {
 		if (res != CURLE_OK) {
 			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
 			cleanup(curl_handle, &recv_buf);
-
 			/*keep trying*/
 			continue;
 		}
@@ -98,6 +92,10 @@ void* work(void* arg) {
 
 		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY AND E.DATA!!*/
 		cleanup(curl_handle, &recv_buf);
+
+		if (*p_in->pngs_collected >= p_in->target) {
+			contWork = 0;
+		}
 
 	}
 
@@ -161,6 +159,7 @@ int main(int argc, char** argv) {
 	/*init PNG result list*/
 	png_node* phead = NULL;
 	int pngs_collected = 0;
+	int blocked_threads = 0;
 
 	/*Concurrency Controls*/
 	pthread_cond_t sig_frontier;
@@ -183,6 +182,7 @@ int main(int argc, char** argv) {
 	p_in->ftail = ftail;
 	p_in->phead = phead;
 	p_in->pngs_collected = &pngs_collected;
+	p_in->blocked_threads = &blocked_threads;
 	p_in->target = num_urls;
 	p_in->logfile = logfile;
 	p_in->sig_frontier = &sig_frontier;

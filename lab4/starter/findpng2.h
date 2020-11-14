@@ -23,6 +23,7 @@ typedef struct dummmy3
 	frontier_node* ftail;
 	png_node* phead;
 	int* pngs_collected;
+	int* blocked_threads;
 	int target;
 	char* logfile;
 	pthread_cond_t* sig_frontier;
