@@ -26,6 +26,18 @@
 
 int logging = 0;
 
+/*search function for linked list (png)*/
+int search(png_node* head, char* url) {
+	png_node* current = head;
+	while (current != NULL) {
+		if (current->url == url) {
+			return 1;
+		}
+		current = current->next;
+	}
+	return 0;
+}
+
 /*work to be performed by threads*/
 void* work(void* arg) {
 	thread_args *p_in = arg;
@@ -38,21 +50,32 @@ void* work(void* arg) {
 		/*pop the next element in frontier*/
 		frontier_node* popped = p_in->fhead;
 		p_in->fhead = p_in->fhead->next;
-		if (p_in->fhead == NULL) p_in->ftail = NULL;
+		if (p_in->fhead == NULL) {
+			p_in->ftail = NULL;
+		}
 
+//
+		printf("TRYING TO GRAB URL:	%s\n", popped->url);
+//
+
+		//Search VISITED hash table
 		e.key = popped->url;
-		e.data = (void*) *p_in->pngs_collected;
+ /*		e.data = (void*) *p_in->pngs_collected;*/
+		e.data = NULL;
 		ep = hsearch(e, FIND);
 
-		/*if already in visited, break*/
+		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
+//
+			puts("	VISITED");
+//
 			free(popped->url);
 			free(popped);
 			continue;
 		}
-		ep = hsearch(e, ENTER);
 
-		/*hsearch with ENTER flag enters the element if its not already there*/
+		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element if its not already there*/
+		ep = hsearch(e, ENTER);
 
 		/*print the URL to log file*/
 		if (logging) {
@@ -65,7 +88,7 @@ void* work(void* arg) {
 		/*CURL the popped URL*/
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, popped->url);
-		printf("GRABBING URL: %s\n", popped->url);
+		printf("	GRABBING URL:	%s\n", popped->url);
 		if (curl_handle == NULL) {
 			abort();
 		}
@@ -78,7 +101,7 @@ void* work(void* arg) {
 			/*keep trying*/
 			continue;
 		}
-		/*data processing handled externally*/
+		/*data processing handled externally (process_data => html/png)*/
 		process_data(curl_handle, &recv_buf, arg);
 
 		free(popped->url);
@@ -188,25 +211,47 @@ int main(int argc, char** argv) {
 
 	/*CLEANUP*/
 	curl_global_cleanup();
-	/*destroy linked lists*/
+
+	/*destroy frontier linked list*/
+//
+	printf("\nFRONTIER\n");
+//
 	frontier_node* fstepper = p_in->fhead;
 	while (fstepper != NULL) {
+//
+		printf("	%s\n", fstepper->url);
+//
 		frontier_node* tmp = fstepper;
 		fstepper = fstepper->next;
 		free(tmp->url);
 		free(tmp);
 	}
+
+	/*destroy png linked list*/
+//
+	printf("\nPNG\n");
+//
 	png_node* pstepper = p_in->phead;
 	while (pstepper != NULL) {
+//
+		printf("        %s\n", pstepper->url);
+//
 		png_node* tmp = pstepper;
 		pstepper = pstepper->next;
 		free(tmp->url);
 		free(tmp);
 	}
+
+	/*cleanup thread*/
 	free(p_in);
 	free(threads);
+
+	/*clean up visited hash table*/
 	hdestroy();
+
+	/*remove curled png files*/
+	/*cont*/
+
 
 	return 0;
 }
-

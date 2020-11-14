@@ -27,4 +27,4 @@ typedef struct dummmy3
 	char* logfile;
 } thread_args;
 
-
+int search(png_node* head, char* url);

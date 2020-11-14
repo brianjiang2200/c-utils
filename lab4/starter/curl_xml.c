@@ -378,14 +378,14 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 	thread_args *p_in = arg;
 	/*---*/
 
-    pid_t pid =getpid();
+    pid_t pid = getpid();
     char fname[256];
     char *eurl = NULL;          /* effective URL */
     curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &eurl);
     if ( eurl != NULL) {
 
 //
-        /*printf("The PNG url is: %s\n", eurl);*/
+	printf("The PNG url is: %s\n", eurl);
 	printf("FIRST BYTES: {%02X%02X%02X%02X}\n", (unsigned char)p_recv_buf->buf[0],
 		(unsigned char)p_recv_buf->buf[1], (unsigned char)p_recv_buf->buf[2],
 		(unsigned char)p_recv_buf->buf[3]);
@@ -397,6 +397,13 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 		&& (unsigned char)p_recv_buf->buf[4] == 0x0d && (unsigned char)p_recv_buf->buf[5] == 0x0a
 		&& (unsigned char)p_recv_buf->buf[6] == 0x1a && (unsigned char)p_recv_buf->buf[7] == 0x0a) {
 
+			if (search(p_in->phead, eurl) == 0) {	/*Unsuccessful search*/
+				printf("        SEARCH UNSUCCESSFUL: UNIQUE PNG FOUND\n");
+			}
+			else {
+				printf("        SEARCH SUCCESSFUL: PNG ALREADY EXISTS\n");
+			}
+
 			/*---add PNG url to the PNG Linked List*/
 			png_node* new_node = malloc(sizeof(png_node));
 			new_node->url = malloc(URL_LENGTH * sizeof(char));
@@ -405,7 +412,7 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 			new_node->next = p_in->phead;
 			p_in->phead = new_node;
 			*p_in->pngs_collected = __sync_add_and_fetch(p_in->pngs_collected, 1);
-			printf("PNG COUNT: %d\n", *p_in->pngs_collected);
+			printf("		PNG COUNT: %d\n", *p_in->pngs_collected);
 			/*---*/
 	}
     }
@@ -435,7 +442,7 @@ int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
     }
 
     if ( response_code >= 400 ) {
-    	fprintf(stderr, "Error.\n");
+	fprintf(stderr, "Error.\n");
         return 1;
     }
 
