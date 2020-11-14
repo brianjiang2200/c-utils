@@ -143,6 +143,7 @@ int main(int argc, char** argv) {
 
 	/*thread init*/
 	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
+
 	/*init URL frontier*/
 	frontier_node* fhead = malloc(sizeof(frontier_node));
 	fhead->url = malloc(URL_LENGTH * sizeof(char));
@@ -156,6 +157,21 @@ int main(int argc, char** argv) {
 	/*init PNG result list*/
 	png_node* phead = NULL;
 	int pngs_collected = 0;
+
+	/*Concurrency Controls*/
+	pthread_cond_t sig_frontier;
+	pthread_mutex_t mut_frontier;
+	pthread_mutex_t mut_pngs;
+	pthread_rwlock_t rw_hash;
+	pthread_mutex_t mut_log;
+	if (pthread_cond_init(&sig_frontier, NULL) ||
+		pthread_mutex_init(&mut_frontier, NULL) ||
+		pthread_mutex_init(&mut_pngs, NULL) ||
+		pthread_rwlock_init(&rw_hash, NULL) ||
+		pthread_mutex_init(&mut_log, NULL)) {
+			perror("concurrency controls");
+			abort();
+	}
 
 //SINGLE-THREADED
 	thread_args *p_in = malloc(sizeof(thread_args));
@@ -219,6 +235,13 @@ int main(int argc, char** argv) {
 		free(tmp->url);
 		free(tmp);
 	}
+
+	/*cleanup concurrency controls*/
+	pthread_cond_destroy(&sig_frontier);
+	pthread_mutex_destroy(&mut_frontier);
+	pthread_mutex_destroy(&mut_pngs);
+	pthread_rwlock_destroy(&rw_hash);
+	pthread_mutex_destroy(&mut_log);
 
 	/*cleanup thread*/
 	free(p_in);
