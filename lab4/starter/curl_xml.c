@@ -141,8 +141,8 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
 			p_in->fhead = new_node;
 			p_in->ftail = new_node;
 		}
+		pthread_cond_signal(p_in->sig_frontier);
 		pthread_mutex_unlock(p_in->mut_frontier);
-
 		/*---*/
             }
             xmlFree(href);
@@ -408,7 +408,7 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 			pthread_mutex_unlock(p_in->mut_pngs);
 
 //TEST
-			printf("		PNG COUNT: %d\n", *p_in->pngs_collected);
+			printf("PNG COUNT: %d\n", *p_in->pngs_collected);
 //
 
 			/*---*/

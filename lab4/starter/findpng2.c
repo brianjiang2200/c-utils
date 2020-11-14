@@ -37,17 +37,23 @@ void* work(void* arg) {
 
 	while (contWork) {
 
+		pthread_mutex_lock(p_in->mut_pngs);
+		if (*p_in->pngs_collected >= p_in->target) {
+			break;
+		}
+		pthread_mutex_unlock(p_in->mut_pngs);
+
 		pthread_mutex_lock(p_in->mut_frontier);				/*THREAD LOCK*/
 
 		/*check if empty frontier first*/
 		if (p_in->fhead == NULL) {
 			*p_in->blocked_threads = __sync_add_and_fetch(p_in->blocked_threads, 1);
-			if (*p_in->blocked_threads < p_in->target) {
+			if (*p_in->blocked_threads < p_in->num_threads) {
 				/*wait and unblock frontier*/
 				pthread_cond_wait(p_in->sig_frontier, p_in->mut_frontier);
 			}
 			/*now if the last thread to be blocked and nothing left in frontier*/
-			if (*p_in->blocked_threads >= p_in->target && p_in->fhead == NULL) {
+			if (*p_in->blocked_threads >= p_in->num_threads && p_in->fhead == NULL) {
 				pthread_cond_broadcast(p_in->sig_frontier);
 				pthread_mutex_unlock(p_in->mut_frontier);
 				break;
@@ -77,7 +83,6 @@ void* work(void* arg) {
 		if (ep != NULL) {	//represents successful search
 			continue;
 		}
-
 		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
 		ep = hsearch(e, ENTER);
 		pthread_rwlock_unlock(p_in->rw_hash);
@@ -88,16 +93,18 @@ void* work(void* arg) {
 			FILE *fp = fopen(p_in->logfile, "a");
 			if (fp != NULL) {
 				fwrite(e.key, strlen(e.key), 1, fp);
+				fwrite("\n", 1, 1, fp);
 			}
+			fclose(fp);
 			pthread_mutex_unlock(p_in->mut_log);
 		}
 
 		/*CURL the popped URL*/
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, e.key);
-//TEST
+/*TEST
 		printf("	GRABBING URL:	%s\n", e.key);
-//
+*/
 		if (curl_handle == NULL) {
 			abort();
 		}
@@ -114,11 +121,21 @@ void* work(void* arg) {
 		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY AND E.DATA!!*/
 		cleanup(curl_handle, &recv_buf);
 
-		if (*p_in->pngs_collected >= p_in->target) {
-			contWork = 0;
+		if (contWork) {
+		pthread_mutex_lock(p_in->mut_pngs);
+			if (*p_in->pngs_collected >= p_in->target) {
+				contWork = 0;
+			}
+		pthread_mutex_unlock(p_in->mut_pngs);
 		}
 
 	}
+
+	/*Once while finished exit other thread, since PNG limit reached*/
+	pthread_mutex_lock(p_in->mut_frontier);
+	*p_in->blocked_threads = p_in->num_threads;
+	pthread_cond_broadcast(p_in->sig_frontier);
+	pthread_mutex_unlock(p_in->mut_frontier);
 
 	return NULL;
 }
@@ -164,9 +181,6 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	/*thread init*/
-	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
-
 	/*init URL frontier*/
 	frontier_node* fhead = malloc(sizeof(frontier_node));
 	fhead->url = malloc(URL_LENGTH * sizeof(char));
@@ -205,6 +219,7 @@ int main(int argc, char** argv) {
 	p_in->pngs_collected = &pngs_collected;
 	p_in->blocked_threads = &blocked_threads;
 	p_in->target = num_urls;
+	p_in->num_threads = no_threads;
 	p_in->logfile = logfile;
 	p_in->sig_frontier = &sig_frontier;
 	p_in->mut_frontier = &mut_frontier;
@@ -215,10 +230,16 @@ int main(int argc, char** argv) {
 	/*curl init*/
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 
-	/*thread create*/
-        pthread_create(threads, NULL, work, p_in);
+	/*thread init*/
+	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
 
-	pthread_join(threads[0], NULL);
+	/*thread create*/
+	for (int i = 0; i < no_threads; ++i) {
+	        pthread_create(threads + i, NULL, work, p_in);
+	}
+	for (int i = 0; i < no_threads; ++i) {
+		pthread_join(threads[i], NULL);
+	}
 
 	/*Print PNG URLs to png.urls.txt, this will create an empty file even if nothing to print*/
 	FILE* fp_pngs;
