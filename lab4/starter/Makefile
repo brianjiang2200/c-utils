@@ -21,17 +21,17 @@ all: ${TARGETS}
 findpng2: $(HEADERS) $(SRCS)
 	$(LD) -o findpng2 $(SRCS) -pthread $(CFLAGS) $(LDLIBS) $(LDFLAGS)
 
-m10t1: findpng2
+test1: findpng2
 	./findpng2 -m 10 http://ece252-1.uwaterloo.ca/lab4
 
-m30t1: findpng2
+test2: findpng2
 	./findpng2 -m 30 http://ece252-1.uwaterloo.ca/lab4
 
 m10t3: findpng2
 	./findpng2 -m 10 -t 3 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
-m10t15: findpng2
-	./findpng2 -m 10 -t 15 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
+m10t5: findpng2
+	./findpng2 -m 10 -t 5 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
 m30t10: findpng2
 	./findpng2 -m 30 -t 10 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4

@@ -26,7 +26,6 @@
  * @see https://ec.haxx.se/callback-write.html
  */
 
-#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,7 +38,6 @@
 #include <libxml/xpath.h>
 #include <libxml/uri.h>
 #include <pthread.h>
-#include <search.h>
 #include "curl_xml.h"
 #include "findpng2.h"
 
@@ -115,8 +113,6 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
         return 1;
     }
 
-    ENTRY e, *ep;
-
     doc = mem_getdoc(buf, size, base_url);
     result = getnodeset (doc, xpath);
     if (result) {
@@ -131,19 +127,6 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
                 /*printf("href: %s\n", href);*/
 		/*---add URL to the frontier*/
-
-		/*check if we even need to add URL to frontier*/
-		e.key = (char*)href;
-		e.data = (char*)href;
-		pthread_rwlock_rdlock(p_in->rw_hash);
-		ep = hsearch(e, FIND);
-		if (ep != NULL) {
-			free(e.key);
-			pthread_rwlock_unlock(p_in->rw_hash);
-			continue;
-		}
-		pthread_rwlock_unlock(p_in->rw_hash);
-
 		frontier_node* new_node = malloc(sizeof(frontier_node));
 		new_node->url = malloc(URL_LENGTH * sizeof(char));
 		memset(new_node->url, 0, URL_LENGTH * sizeof(char));
@@ -158,7 +141,7 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
 			p_in->fhead = new_node;
 			p_in->ftail = new_node;
 		}
-		pthread_cond_signal(p_in->sig_frontier);	/*causes seg fault???*/
+		pthread_cond_signal(p_in->sig_frontier);
 		pthread_mutex_unlock(p_in->mut_frontier);
 		/*---*/
             }

@@ -39,7 +39,6 @@ void* work(void* arg) {
 
 		pthread_mutex_lock(p_in->mut_pngs);
 		if (*p_in->pngs_collected >= p_in->target) {
-			pthread_mutex_unlock(p_in->mut_pngs);
 			break;
 		}
 		pthread_mutex_unlock(p_in->mut_pngs);
@@ -75,20 +74,16 @@ void* work(void* arg) {
                 e.key = popped->url;
                 e.data = popped->url;
                 /*free popped node*/
-//		free(popped);
+                free(popped);
 
-//to remove
 		//Search VISITED hash table
 		pthread_rwlock_wrlock(p_in->rw_hash);
 		ep = hsearch(e, FIND);
-		//if already in visited, move forward to next URL in frontier
+		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
-			pthread_rwlock_unlock(p_in->rw_hash);
-			free(e.key);
-			free(popped);
 			continue;
 		}
-		//Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there
+		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
 		ep = hsearch(e, ENTER);
 		pthread_rwlock_unlock(p_in->rw_hash);
 
@@ -107,9 +102,9 @@ void* work(void* arg) {
 		/*CURL the popped URL*/
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, e.key);
-//TEST
-//		printf("	GRABBING URL:	%s\n", e.key);
-//
+/*TEST
+		printf("	GRABBING URL:	%s\n", e.key);
+*/
 		if (curl_handle == NULL) {
 			abort();
 		}
@@ -118,16 +113,12 @@ void* work(void* arg) {
 			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
 			cleanup(curl_handle, &recv_buf);
 			/*keep trying*/
-			free(e.key);
-			free(popped);
 			continue;
 		}
 		/*data processing handled externally (process_data => html/png)*/
 		process_data(curl_handle, &recv_buf, arg);
 
-		free(e.key);
-		free(popped);
-
+		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY AND E.DATA!!*/
 		cleanup(curl_handle, &recv_buf);
 
 		if (contWork) {
@@ -272,14 +263,9 @@ int main(int argc, char** argv) {
 	curl_global_cleanup();
 
 	/*destroy frontier linked list*/
-//TEST
-	puts("FRONTIER");
-//
+
 	frontier_node* fstepper = p_in->fhead;
 	while (fstepper != NULL) {
-//
-		printf("%s\n", fstepper->url);
-//
 		frontier_node* tmp = fstepper;
 		fstepper = fstepper->next;
 		free(tmp->url);
