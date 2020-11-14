@@ -39,6 +39,23 @@ void* work(void* arg) {
 
 		pthread_mutex_lock(p_in->mut_frontier);				/*THREAD LOCK*/
 
+		/*check if empty frontier first*/
+		if (p_in->fhead == NULL) {
+			*p_in->blocked_threads = __sync_add_and_fetch(p_in->blocked_threads, 1);
+			if (*p_in->blocked_threads < p_in->target) {
+				/*wait and unblock frontier*/
+				pthread_cond_wait(p_in->sig_frontier, p_in->mut_frontier);
+			}
+			/*now if the last thread to be blocked and nothing left in frontier*/
+			if (*p_in->blocked_threads >= p_in->target && p_in->fhead == NULL) {
+				pthread_cond_broadcast(p_in->sig_frontier);
+				pthread_mutex_unlock(p_in->mut_frontier);
+				break;
+			}
+			/*decrement blocked threads counter when leaving this area*/
+			*p_in->blocked_threads = __sync_add_and_fetch(p_in->blocked_threads, -1);
+		}
+
 		/*pop the next element in frontier*/
 		frontier_node* popped = p_in->fhead;
 		p_in->fhead = p_in->fhead->next;
