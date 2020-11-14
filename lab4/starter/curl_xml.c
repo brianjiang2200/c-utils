@@ -4,19 +4,19 @@
  * https://curl.haxx.se/libcurl/c/getinmemory.html
  * Copyright (C) 1998 - 2018, Daniel Stenberg, <daniel@haxx.se>, et al..
  *
- * The xml example code is 
+ * The xml example code is
  * http://www.xmlsoft.org/tutorial/ape.html
  *
- * The paster.c code is 
+ * The paster.c code is
  * Copyright 2013 Patrick Lam, <p23lam@uwaterloo.ca>.
  *
  * Modifications to the code are
  * Copyright 2018-2019, Yiqing Huang, <yqhuang@uwaterloo.ca>.
- * 
+ *
  * This software may be freely redistributed under the terms of the X11 license.
  */
 
-/** 
+/**
  * @file main_wirte_read_cb.c
  * @brief cURL write call back to save received data in a user defined memory first
  *        and then write the data to a file for verification purpose.
@@ -24,7 +24,7 @@
  * @see https://curl.haxx.se/libcurl/c/getinmemory.html
  * @see https://curl.haxx.se/libcurl/using/
  * @see https://ec.haxx.se/callback-write.html
- */ 
+ */
 
 
 #include <stdio.h>
@@ -149,7 +149,7 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
     return 0;
 }
 /**
- * @brief  cURL header call back function to extract image sequence number from 
+ * @brief  cURL header call back function to extract image sequence number from
  *         http header data. An example header for image part n (assume n = 2) is:
  *         X-Ece252-Fragment: 2
  * @param  char *p_recv: header data delivered by cURL
@@ -158,7 +158,7 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
  * @param  void *userdata user defined data structurea
  * @return size of header data received.
  * @details this routine will be invoked multiple times by the libcurl until the full
- * header data are received.  we are only interested in the ECE252_HEADER line 
+ * header data are received.  we are only interested in the ECE252_HEADER line
  * received so that we can extract the image sequence number from it. This
  * explains the if block in the code.
  */
@@ -183,7 +183,7 @@ size_t header_cb_curl(char *p_recv, size_t size, size_t nmemb, void *userdata)
 
 /**
  * @brief write callback function to save a copy of received data in RAM.
- *        The received libcurl data are pointed by p_recv, 
+ *        The received libcurl data are pointed by p_recv,
  *        which is provided by libcurl and is not user allocated memory.
  *        The user allocated memory is at p_userdata. One needs to
  *        cast it to the proper struct to make good use of it.
@@ -195,10 +195,10 @@ size_t write_cb_curl3(char *p_recv, size_t size, size_t nmemb, void *p_userdata)
 {
     size_t realsize = size * nmemb;
     RECV_BUF *p = (RECV_BUF *)p_userdata;
- 
-    if (p->size + realsize + 1 > p->max_size) {/* hope this rarely happens */ 
+
+    if (p->size + realsize + 1 > p->max_size) {/* hope this rarely happens */
         /* received data is not 0 terminated, add one byte for terminating 0 */
-        size_t new_size = p->max_size + max(BUF_INC, realsize + 1);   
+        size_t new_size = p->max_size + max(BUF_INC, realsize + 1);
         char *q = realloc(p->buf, new_size);
         if (q == NULL) {
             perror("realloc"); /* out of memory */
@@ -283,7 +283,7 @@ int write_file(const char *path, const void *in, size_t len)
 
     if (fwrite(in, 1, len, fp) != len) {
         fprintf(stderr, "write_file: imcomplete write!\n");
-        return -3; 
+        return -3;
     }
     return fclose(fp);
 }
@@ -320,12 +320,12 @@ CURL *easy_handle_init(RECV_BUF *ptr, const char *url)
     curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 
     /* register write call back function to process received data */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_cb_curl3); 
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_cb_curl3);
     /* user defined data structure passed to the call back function */
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)ptr);
 
     /* register header call back function to process received header data */
-    curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_cb_curl); 
+    curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_cb_curl);
     /* user defined data structure passed to the call back function */
     curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void *)ptr);
 
@@ -338,7 +338,7 @@ CURL *easy_handle_init(RECV_BUF *ptr, const char *url)
     curl_easy_setopt(curl_handle, CURLOPT_UNRESTRICTED_AUTH, 1L);
     /* max numbre of redirects to follow sets to 5 */
     curl_easy_setopt(curl_handle, CURLOPT_MAXREDIRS, 5L);
-    /* supports all built-in encodings */ 
+    /* supports all built-in encodings */
     curl_easy_setopt(curl_handle, CURLOPT_ACCEPT_ENCODING, "");
 
     /* Max time in seconds that the connection phase to the server to take */
@@ -378,31 +378,23 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 	thread_args *p_in = arg;
 	/*---*/
 
-    pid_t pid = getpid();
-    char fname[256];
-    char *eurl = NULL;          /* effective URL */
-    curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &eurl);
-    if ( eurl != NULL) {
+	pid_t pid = getpid();
+	char fname[256];
+	char *eurl = NULL;          /* effective URL */
+	curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &eurl);
+	if ( eurl != NULL) {
 
-//
-	printf("The PNG url is: %s\n", eurl);
-	printf("FIRST BYTES: {%02X%02X%02X%02X}\n", (unsigned char)p_recv_buf->buf[0],
+//TEST
+	printf("	FIRST BYTES: {%02X%02X%02X%02X}\n", (unsigned char)p_recv_buf->buf[0],
 		(unsigned char)p_recv_buf->buf[1], (unsigned char)p_recv_buf->buf[2],
 		(unsigned char)p_recv_buf->buf[3]);
 //
 
-	/*Check for valid PNG byte by byte*/
-	if ((unsigned char)p_recv_buf->buf[0] == 0x89 && (unsigned char)p_recv_buf->buf[1] == 0x50
-		&& (unsigned char)p_recv_buf->buf[2] == 0x4e && (unsigned char)p_recv_buf->buf[3] == 0x47
-		&& (unsigned char)p_recv_buf->buf[4] == 0x0d && (unsigned char)p_recv_buf->buf[5] == 0x0a
-		&& (unsigned char)p_recv_buf->buf[6] == 0x1a && (unsigned char)p_recv_buf->buf[7] == 0x0a) {
-
-			if (search(p_in->phead, eurl) == 0) {	/*Unsuccessful search*/
-				printf("        SEARCH UNSUCCESSFUL: UNIQUE PNG FOUND\n");
-			}
-			else {
-				printf("        SEARCH SUCCESSFUL: PNG ALREADY EXISTS\n");
-			}
+		/*Check for valid PNG byte by byte*/
+		if ((unsigned char)p_recv_buf->buf[0] == 0x89 && (unsigned char)p_recv_buf->buf[1] == 0x50
+			&& (unsigned char)p_recv_buf->buf[2] == 0x4e && (unsigned char)p_recv_buf->buf[3] == 0x47
+			&& (unsigned char)p_recv_buf->buf[4] == 0x0d && (unsigned char)p_recv_buf->buf[5] == 0x0a
+			&& (unsigned char)p_recv_buf->buf[6] == 0x1a && (unsigned char)p_recv_buf->buf[7] == 0x0a) {
 
 			/*---add PNG url to the PNG Linked List*/
 			png_node* new_node = malloc(sizeof(png_node));
@@ -412,10 +404,18 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 			new_node->next = p_in->phead;
 			p_in->phead = new_node;
 			*p_in->pngs_collected = __sync_add_and_fetch(p_in->pngs_collected, 1);
+
+//TEST
 			printf("		PNG COUNT: %d\n", *p_in->pngs_collected);
+//
+
 			/*---*/
+		}
+
+	/*NEXT STEP: DELETE PNG URL FROM FRONTIER*/
+	/*---*/
+
 	}
-    }
 
     sprintf(fname, "./output_%d_%d.png", p_recv_buf->seq, pid);
     return write_file(fname, p_recv_buf->buf, p_recv_buf->size);
@@ -425,7 +425,7 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 /**
  * @brief process teh download data by curl
  * @param CURL *curl_handle is the curl handler
- * @param RECV_BUF p_recv_buf contains the received data. 
+ * @param RECV_BUF p_recv_buf contains the received data.
  * @return 0 on success; non-zero otherwise
  */
 
