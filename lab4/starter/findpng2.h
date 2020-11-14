@@ -25,4 +25,9 @@ typedef struct dummmy3
 	int* pngs_collected;
 	int target;
 	char* logfile;
+	pthread_cond_t* sig_frontier;
+	pthread_mutex_t* mut_frontier;
+	pthread_mutex_t* mut_pngs;
+	pthread_rwlock_t* rw_hash;
+	pthread_mutex_t* mut_log;
 } thread_args;

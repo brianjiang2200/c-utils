@@ -35,17 +35,21 @@ void* work(void* arg) {
 
 	while (p_in->fhead != NULL && *p_in->pngs_collected < p_in->target) {
 
+		pthread_mutex_lock(p_in->mut_frontier);				/*THREAD LOCK*/
+
 		/*pop the next element in frontier*/
 		frontier_node* popped = p_in->fhead;
-		/*save value of phead, to be popped*/
-		e.key = popped->url;
-		e.data = popped->url;	//THEORY: FOR ENTER FLAG, DATA IS INSERTED INTO HASH TABLE (REPRESENTS URL)?
-		/*unlink current head node (to be popped)*/
 		p_in->fhead = p_in->fhead->next;
 		/*maintain linked list consistent state and help to terminate loop when nothing left*/
-		if (p_in->fhead == NULL) p_in->ftail = NULL;
-		/*free popped node*/
-		free(popped);
+                if (p_in->fhead == NULL) p_in->ftail = NULL;
+
+		pthread_mutex_unlock(p_in->mut_frontier);			/*THREAD UNLOCK*/
+
+		/*save value of phead, to be popped*/
+                e.key = popped->url;
+                e.data = popped->url;
+                /*free popped node*/
+                free(popped);
 
 //TEST
 		printf("TRYING TO GRAB URL:	%s\n", e.key);
@@ -92,7 +96,7 @@ void* work(void* arg) {
 		/*data processing handled externally (process_data => html/png)*/
 		process_data(curl_handle, &recv_buf, arg);
 
-		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY!!*/
+		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY AND E.DATA!!*/
 		cleanup(curl_handle, &recv_buf);
 
 	}
@@ -173,7 +177,7 @@ int main(int argc, char** argv) {
 			abort();
 	}
 
-//SINGLE-THREADED
+	/*Multi-thread arguments*/
 	thread_args *p_in = malloc(sizeof(thread_args));
 	p_in->fhead = fhead;
 	p_in->ftail = ftail;
@@ -181,11 +185,11 @@ int main(int argc, char** argv) {
 	p_in->pngs_collected = &pngs_collected;
 	p_in->target = num_urls;
 	p_in->logfile = logfile;
-//
-
-/*MULTI-THREADED
-
-*/
+	p_in->sig_frontier = &sig_frontier;
+	p_in->mut_frontier = &mut_frontier;
+	p_in->mut_pngs = &mut_pngs;
+	p_in->rw_hash = &rw_hash;
+	p_in->mut_log = &mut_log;
 
 	/*curl init*/
 	curl_global_init(CURL_GLOBAL_DEFAULT);
