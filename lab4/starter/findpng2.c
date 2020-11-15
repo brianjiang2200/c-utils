@@ -68,23 +68,29 @@ void* work(void* arg) {
 		/*maintain linked list consistent state and help to terminate loop when nothing left*/
                 if (p_in->fhead == NULL) p_in->ftail = NULL;
 
-		pthread_mutex_unlock(p_in->mut_frontier);			/*THREAD UNLOCK*/
+//		pthread_mutex_unlock(p_in->mut_frontier);			/*THREAD UNLOCK*/
 
 		/*save value of phead, to be popped*/
                 e.key = popped->url;
                 e.data = popped->url;
                 /*free popped node*/
-		free(popped);
+//		free(popped);
+
+		pthread_mutex_unlock(p_in->mut_frontier);
 
 		//Search VISITED hash table
-		pthread_rwlock_wrlock(p_in->rw_hash);
+		pthread_rwlock_rdlock(p_in->rw_hash);
 		ep = hsearch(e, FIND);
 		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
 //			free(e.key);
+			pthread_rwlock_unlock(p_in->rw_hash);
 			continue;
 		}
+		pthread_rwlock_unlock(p_in->rw_hash);
+
 		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
+		pthread_rwlock_wrlock(p_in->rw_hash);
 		ep = hsearch(e, ENTER);
 		pthread_rwlock_unlock(p_in->rw_hash);
 
