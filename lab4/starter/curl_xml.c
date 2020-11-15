@@ -115,8 +115,6 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
         return 1;
     }
 
-//  ENTRY e, *ep;
-
     doc = mem_getdoc(buf, size, base_url);
     result = getnodeset (doc, xpath);
     if (result) {
@@ -129,29 +127,12 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
                 xmlFree(old);
             }
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
-                /*printf("href: %s\n", href);*/
-		/*---add URL to the frontier*/
-/*
-//ADDED
-		e.key = (char*)href;
-		e.data = (char*)href;
 
-		//Search VISITED hash table
-		pthread_rwlock_rdlock(p_in->rw_hash);
-		ep = hsearch(e, FIND);
-		//if already in visited, move forward to next URL in frontier
-		if (ep != NULL) {       //represents successful search
-			pthread_rwlock_unlock(p_in->rw_hash);
-			continue;
-		}
-		//Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there
-		pthread_rwlock_unlock(p_in->rw_hash);
-
-		pthread_rwlock_wrlock(p_in->rw_hash);
-		ep = hsearch(e, ENTER);
-		pthread_rwlock_unlock(p_in->rw_hash);
+//TEST
+//		printf("href: %s\n", href);
 //
-*/
+
+		/*---add URL to the frontier*/
 		frontier_node* new_node = malloc(sizeof(frontier_node));
 		new_node->url = malloc(URL_LENGTH * sizeof(char));
 		memset(new_node->url, 0, URL_LENGTH * sizeof(char));
@@ -430,16 +411,21 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 				new_node->next = p_in->phead;
 				p_in->phead = new_node;
 				(*(p_in->pngs_collected))++;
+
+//TEST
 				printf("PNG COUNT: %d\n", *p_in->pngs_collected);
+//
+
 				pthread_mutex_unlock(p_in->mut_pngs);
 			}
 
 			/*---*/
 		}
 	}
-
-    /*sprintf(fname, "./output_%d_%d.png", p_recv_buf->seq, pid);
-    return write_file(fname, p_recv_buf->buf, p_recv_buf->size);*/
+/*
+    sprintf(fname, "./output_%d_%d.png", p_recv_buf->seq, pid);
+    return write_file(fname, p_recv_buf->buf, p_recv_buf->size);
+*/
 	return 0;
 }
 

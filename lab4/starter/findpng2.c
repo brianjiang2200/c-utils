@@ -51,9 +51,17 @@ void* work(void* arg) {
 			(*(p_in->blocked_threads))++;
 			if (*p_in->blocked_threads < p_in->num_threads) {
 				/*wait and unblock frontier*/
-				puts("waiting...");
+
+//TEST
+//				puts("waiting...");
+//
+
 				pthread_cond_wait(p_in->sig_frontier, p_in->mut_frontier);
-				//puts("escaped wait");
+
+//TEST
+//				puts("escaped wait");
+//
+
 			}
 			/*now if the last thread to be blocked and nothing left in frontier*/
 			if (*p_in->blocked_threads >= p_in->num_threads && p_in->fhead == NULL) {
@@ -63,50 +71,81 @@ void* work(void* arg) {
 			}
 			/*decrement blocked threads counter when leaving this area*/
 			(*(p_in->blocked_threads))--;
-			printf("Blocked threads: %d\n", *p_in->blocked_threads);
+
+//TEST
+//			printf("Blocked threads: %d\n", *p_in->blocked_threads);
+//
+
 		}
 
 		if (p_in->fhead == NULL) {
-			puts("fhead empty");
+
+//TEST
+//			puts("fhead empty");
+//
+
 		}
 		/*pop the next element in frontier*/
 		frontier_node* popped = p_in->fhead;
 		p_in->fhead = p_in->fhead->next;
 		/*maintain linked list consistent state and help to terminate loop when nothing left*/
-                if (p_in->fhead == NULL) p_in->ftail = NULL;
+		if (p_in->fhead == NULL) p_in->ftail = NULL;
 
 		pthread_mutex_unlock(p_in->mut_frontier);
 
 		/*save value of phead, to be popped*/
                 e.key = popped->url;
                 e.data = popped->url;
-                /*free popped node*/
+		/*free popped node*/
+//free		free(popped);
 
 		//Search VISITED hash table
 		pthread_rwlock_rdlock(p_in->rw_hash);
-		//puts("inside readlock");
+
+//TEST
+//		puts("inside readlock");
+//
+
 		hsearch_r(e, FIND, &ep, p_in->visited);
 		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
 			pthread_rwlock_unlock(p_in->rw_hash);
-			//puts("released readlock");
-//			free(e.key);
+
+//TEST
+//			puts("released readlock");
+//
+
+//free			free(e.key);
 			continue;
 		}
 		pthread_rwlock_unlock(p_in->rw_hash);
-		//puts("released readlock");
+
+//TEST
+//		puts("released readlock");
+//
 
 		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
 		pthread_rwlock_wrlock(p_in->rw_hash);
-		//puts("inside writelock");
+
+//TEST
+//		puts("inside writelock");
+//
+
 		hsearch_r(e, ENTER, &ep, p_in->visited);
 		pthread_rwlock_unlock(p_in->rw_hash);
-		//puts("released readlock");
+
+//TEST
+//		puts("released readlock");
+//
 
 		/*print the URL to log file*/
 		if (logging) {
 			pthread_mutex_lock(p_in->mut_log);
-			//puts("logging");
+
+//TEST
+//			puts("logging");
+//
+
 			FILE *fp = fopen(p_in->logfile, "a");
 			if (fp != NULL) {
 				fwrite(e.key, strlen(e.key), 1, fp);
@@ -119,9 +158,11 @@ void* work(void* arg) {
 		/*CURL the popped URL*/
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, e.key);
+
 //TEST
 //		printf("GRABBING URL: %s\n", e.key);
 //
+
 		if (curl_handle == NULL) {
 			abort();
 		}
@@ -129,22 +170,29 @@ void* work(void* arg) {
 		if (res != CURLE_OK) {
 			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
 			cleanup(curl_handle, &recv_buf);
-//			free(e.key);
+//free			free(e.key);
 			/*keep trying*/
 			continue;
 		}
 		/*data processing handled externally (process_data => html/png)*/
 		process_data(curl_handle, &recv_buf, arg);
-		puts("FINISHED DATA PROCESSING");
+
+//TEST
+//		puts("FINISHED DATA PROCESSING");
+//
 
 		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY AND E.DATA!!*/
-//		free(e.key);
+//free		free(e.key);
 
 		cleanup(curl_handle, &recv_buf);
 
 		pthread_mutex_lock(p_in->mut_pngs);
                 if (*p_in->pngs_collected >= p_in->target) {
-                        //puts("breaking out of loop");
+
+//TEST
+//			puts("breaking out of loop");
+//
+
 			pthread_mutex_unlock(p_in->mut_pngs);
                         break;
                 }
@@ -288,14 +336,18 @@ int main(int argc, char** argv) {
 	curl_global_cleanup();
 
 	/*destroy frontier linked list*/
+
 //TEST
 //	printf("\nFRONTIER:\n");
 //
+
 	frontier_node* fstepper = p_in->fhead;
 	while (fstepper != NULL) {
+
 //TEST
 //		printf("	%s\n", fstepper->url);
 //
+
 		frontier_node* tmp = fstepper;
 		fstepper = fstepper->next;
 		free(tmp->url);
