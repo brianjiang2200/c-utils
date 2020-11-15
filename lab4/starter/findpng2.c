@@ -79,7 +79,7 @@ void* work(void* arg) {
 
 		/*save value of phead, to be popped*/
                 e.key = popped->url;
-                e.data = popped->url;
+                e.data = NULL;
 		/*free popped node*/
 		free(popped);
 
@@ -118,7 +118,7 @@ void* work(void* arg) {
 
 		/*CURL the popped URL*/
         	RECV_BUF recv_buf;
-		curl_handle = easy_handle_init(&recv_buf, e.key);
+		curl_handle = easy_handle_init(&recv_buf, ep->key);
 
 		if (curl_handle == NULL) {
 			abort();
@@ -137,9 +137,6 @@ void* work(void* arg) {
 		process_data(curl_handle, &recv_buf, arg);
 
 		cleanup(curl_handle, &recv_buf);
-		//free(e.key);
-		//e.key = NULL;
-		//e.data = NULL;
 
 		pthread_mutex_lock(p_in->mut_pngs);
                 if (*p_in->pngs_collected >= p_in->target) {
