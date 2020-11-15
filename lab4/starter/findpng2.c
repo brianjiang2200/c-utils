@@ -39,6 +39,8 @@ void* work(void* arg) {
 
 		pthread_mutex_lock(p_in->mut_pngs);
 		if (*p_in->pngs_collected >= p_in->target) {
+			puts("breaking out of loop");
+			pthread_mutex_unlock(p_in->mut_pngs);
 			break;
 		}
 		pthread_mutex_unlock(p_in->mut_pngs);
@@ -47,10 +49,13 @@ void* work(void* arg) {
 
 		/*check if empty frontier first*/
 		if (p_in->fhead == NULL) {
-			*p_in->blocked_threads = __sync_add_and_fetch(p_in->blocked_threads, 1);
+			//p_in->blocked_threads = __sync_add_and_fetch(p_in->blocked_threads, 1);
+			*p_in->blocked_threads = *p_in->blocked_threads + 1;
 			if (*p_in->blocked_threads < p_in->num_threads) {
 				/*wait and unblock frontier*/
+				puts("waiting...");
 				pthread_cond_wait(p_in->sig_frontier, p_in->mut_frontier);
+				puts("escaped wait");
 			}
 			/*now if the last thread to be blocked and nothing left in frontier*/
 			if (*p_in->blocked_threads >= p_in->num_threads && p_in->fhead == NULL) {
@@ -59,7 +64,9 @@ void* work(void* arg) {
 				break;
 			}
 			/*decrement blocked threads counter when leaving this area*/
-			*p_in->blocked_threads = __sync_add_and_fetch(p_in->blocked_threads, -1);
+			//p_in->blocked_threads = __sync_add_and_fetch(p_in->blocked_threads, -1);
+			*p_in->blocked_threads = *p_in->blocked_threads - 1;
+			printf("Blocked threads: %d\n", *p_in->blocked_threads);
 		}
 
 		/*pop the next element in frontier*/
@@ -68,34 +75,39 @@ void* work(void* arg) {
 		/*maintain linked list consistent state and help to terminate loop when nothing left*/
                 if (p_in->fhead == NULL) p_in->ftail = NULL;
 
-//		pthread_mutex_unlock(p_in->mut_frontier);			/*THREAD UNLOCK*/
+		pthread_mutex_unlock(p_in->mut_frontier);			/*THREAD UNLOCK*/
 
+		puts("released frontier mutex");
 		/*save value of phead, to be popped*/
                 e.key = popped->url;
                 e.data = popped->url;
                 /*free popped node*/
 //		free(popped);
 
-		pthread_mutex_unlock(p_in->mut_frontier);
-
 		//Search VISITED hash table
 		pthread_rwlock_rdlock(p_in->rw_hash);
+		puts("inside readlock");
 		hsearch_r(e, FIND, &ep, p_in->visited);
 		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
 			pthread_rwlock_unlock(p_in->rw_hash);
+			puts("released readlock");
 			continue;
 		}
 		pthread_rwlock_unlock(p_in->rw_hash);
+		puts("released readlock");
 
 		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
 		pthread_rwlock_wrlock(p_in->rw_hash);
+		puts("inside writelock");
 		hsearch_r(e, ENTER, &ep, p_in->visited);
 		pthread_rwlock_unlock(p_in->rw_hash);
+		puts("released readlock");
 
 		/*print the URL to log file*/
 		if (logging) {
 			pthread_mutex_lock(p_in->mut_log);
+			puts("logging");
 			FILE *fp = fopen(p_in->logfile, "a");
 			if (fp != NULL) {
 				fwrite(e.key, strlen(e.key), 1, fp);
@@ -109,7 +121,7 @@ void* work(void* arg) {
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, e.key);
 //TEST
-//		printf("	GRABBING URL:	%s\n", e.key);
+		printf("GRABBING URL: %s\n", e.key);
 //
 		if (curl_handle == NULL) {
 			abort();
@@ -129,10 +141,19 @@ void* work(void* arg) {
 
 		cleanup(curl_handle, &recv_buf);
 
+		pthread_mutex_lock(p_in->mut_pngs);
+                if (*p_in->pngs_collected >= p_in->target) {
+                        puts("breaking out of loop");
+			pthread_mutex_unlock(p_in->mut_pngs);
+                        break;
+                }
+                pthread_mutex_unlock(p_in->mut_pngs);
+
 	}
 
 	/*Once while finished exit other thread, since PNG limit reached*/
 	pthread_mutex_lock(p_in->mut_frontier);
+	puts("here");
 	*p_in->blocked_threads = p_in->num_threads;
 	pthread_cond_broadcast(p_in->sig_frontier);
 	pthread_mutex_unlock(p_in->mut_frontier);
@@ -233,6 +254,7 @@ int main(int argc, char** argv) {
 
 	/*curl init*/
 	curl_global_init(CURL_GLOBAL_DEFAULT);
+	printf("Blocked threads initial value: %d\n", *p_in->blocked_threads);
 
 	/*thread init*/
 	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
@@ -244,6 +266,8 @@ int main(int argc, char** argv) {
 	for (int i = 0; i < no_threads; ++i) {
 		pthread_join(threads[i], NULL);
 	}
+
+	puts("escaped threads");
 
 	/*Print PNG URLs to png.urls.txt, this will create an empty file even if nothing to print*/
 	FILE* fp_pngs;
