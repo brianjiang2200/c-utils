@@ -88,8 +88,8 @@ void* work(void* arg) {
 
 		/*if already in visited, move forward to next URL in frontier*/
                 if (ep != NULL) {       //represents successful search
-                        free(e.key);
-                        e.key = NULL;
+                        //free(e.key);
+                        //e.key = NULL;
                         continue;
                 }
 
