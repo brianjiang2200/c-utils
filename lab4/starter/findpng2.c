@@ -51,17 +51,7 @@ void* work(void* arg) {
 			(*(p_in->blocked_threads))++;
 			if (*p_in->blocked_threads < p_in->num_threads) {
 				/*wait and unblock frontier*/
-
-//TEST
-//				puts("waiting...");
-//
-
 				pthread_cond_wait(p_in->sig_frontier, p_in->mut_frontier);
-
-//TEST
-//				puts("escaped wait");
-//
-
 			}
 			/*now if the last thread to be blocked and nothing left in frontier*/
 			if (*p_in->blocked_threads >= p_in->num_threads && p_in->fhead == NULL) {
@@ -79,11 +69,9 @@ void* work(void* arg) {
 		}
 
 		if (p_in->fhead == NULL) {
-
-//TEST
-//			puts("fhead empty");
-//
-
+			/*this is an error case, try again*/
+			pthread_mutex_unlock(p_in->mut_frontier);
+			continue;
 		}
 		/*pop the next element in frontier*/
 		frontier_node* popped = p_in->fhead;
