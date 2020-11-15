@@ -45,7 +45,7 @@ void* work(void* arg) {
 		}
 		pthread_mutex_unlock(p_in->mut_pngs);
 
-		pthread_mutex_lock(p_in->mut_frontier);				/*THREAD LOCK*/
+		pthread_mutex_lock(p_in->mut_frontier);
 
 		/*check if empty frontier first*/
 		if (p_in->fhead == NULL) {
@@ -75,7 +75,7 @@ void* work(void* arg) {
 		/*maintain linked list consistent state and help to terminate loop when nothing left*/
                 if (p_in->fhead == NULL) p_in->ftail = NULL;
 
-		pthread_mutex_unlock(p_in->mut_frontier);			/*THREAD UNLOCK*/
+		pthread_mutex_unlock(p_in->mut_frontier);
 
 		//puts("released frontier mutex");
 		/*save value of phead, to be popped*/
@@ -92,6 +92,7 @@ void* work(void* arg) {
 		if (ep != NULL) {	//represents successful search
 			pthread_rwlock_unlock(p_in->rw_hash);
 			//puts("released readlock");
+//			free(e.key);
 			continue;
 		}
 		pthread_rwlock_unlock(p_in->rw_hash);
@@ -121,7 +122,7 @@ void* work(void* arg) {
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, e.key);
 //TEST
-		printf("GRABBING URL: %s\n", e.key);
+//		printf("GRABBING URL: %s\n", e.key);
 //
 		if (curl_handle == NULL) {
 			abort();
@@ -130,6 +131,7 @@ void* work(void* arg) {
 		if (res != CURLE_OK) {
 			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
 			cleanup(curl_handle, &recv_buf);
+//			free(e.key);
 			/*keep trying*/
 			continue;
 		}
@@ -254,7 +256,7 @@ int main(int argc, char** argv) {
 
 	/*curl init*/
 	curl_global_init(CURL_GLOBAL_DEFAULT);
-	printf("Blocked threads initial value: %d\n", *p_in->blocked_threads);
+	//printf("Blocked threads initial value: %d\n", *p_in->blocked_threads);
 
 	/*thread init*/
 	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));

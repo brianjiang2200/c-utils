@@ -115,7 +115,7 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
         return 1;
     }
 
-    ENTRY e, *ep;
+//  ENTRY e, *ep;
 
     doc = mem_getdoc(buf, size, base_url);
     result = getnodeset (doc, xpath);
@@ -426,15 +426,16 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 			memset(new_node->url, 0, URL_LENGTH * sizeof(char));
 			memcpy(new_node->url, eurl, strlen(eurl) * sizeof(char));
 
-			pthread_mutex_lock(p_in->mut_pngs);
-			new_node->next = p_in->phead;
-			p_in->phead = new_node;
-			*p_in->pngs_collected = __sync_add_and_fetch(p_in->pngs_collected, 1);
-			pthread_mutex_unlock(p_in->mut_pngs);
+			if (*p_in->pngs_collected < p_in->target) {
+				pthread_mutex_lock(p_in->mut_pngs);
+				new_node->next = p_in->phead;
+				p_in->phead = new_node;
+				*p_in->pngs_collected = __sync_add_and_fetch(p_in->pngs_collected, 1);
 
-//TEST
-			printf("PNG COUNT: %d\n", *p_in->pngs_collected);
-//
+				printf("PNG COUNT: %d\n", *p_in->pngs_collected);
+
+				pthread_mutex_unlock(p_in->mut_pngs);
+			}
 
 			/*---*/
 		}

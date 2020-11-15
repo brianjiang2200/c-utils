@@ -21,6 +21,9 @@ all: ${TARGETS}
 findpng2: $(HEADERS) $(SRCS)
 	$(LD) -o findpng2 $(SRCS) -pthread $(CFLAGS) $(LDLIBS) $(LDFLAGS)
 
+empty: findpng2
+	./findpng2 http://ece252-1.uwaterloo.ca/lab4
+
 m10t1: findpng2
 	./findpng2 -m 10 http://ece252-1.uwaterloo.ca/lab4
 
@@ -33,6 +36,9 @@ m10t5: findpng2
 m10t15: findpng2
 	./findpng2 -m 10 -t 15 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
+m30t5: findpng2
+	./findpng2 -m 30 -t 5 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
+
 m30t10: findpng2
 	./findpng2 -m 30 -t 10 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
@@ -41,6 +47,9 @@ m50t5: findpng2
 
 m50t15: findpng2
 	./findpng2 -m 50 -t 15 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
+
+m100t5: findpng2
+	./findpng2 -m 100 -t 5 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
 .PHONY: clean
 clean:
