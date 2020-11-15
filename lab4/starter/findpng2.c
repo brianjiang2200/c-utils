@@ -80,20 +80,18 @@ void* work(void* arg) {
 		/*save value of phead, to be popped*/
                 e.key = popped->url;
                 e.data = NULL;
-		/*free popped node*/
-		free(popped);
 
 		//Search VISITED hash table
 		pthread_rwlock_rdlock(p_in->rw_hash);
-
 		hsearch_r(e, FIND, &ep, p_in->visited);
-		/*if already in visited, move forward to next URL in frontier*/
-		if (ep != NULL) {	//represents successful search
-			pthread_rwlock_unlock(p_in->rw_hash);
-			free(e.key);
-			continue;
-		}
 		pthread_rwlock_unlock(p_in->rw_hash);
+
+		/*if already in visited, move forward to next URL in frontier*/
+                if (ep != NULL) {       //represents successful search
+                        free(e.key);
+                        e.key = NULL;
+                        continue;
+                }
 
 		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
 		pthread_rwlock_wrlock(p_in->rw_hash);
@@ -123,7 +121,7 @@ void* work(void* arg) {
 		}
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
-			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
+			//printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
 			cleanup(curl_handle, &recv_buf);
 			/*keep trying*/
 			continue;
@@ -198,7 +196,8 @@ int main(int argc, char** argv) {
 	fhead->url = malloc(URL_LENGTH * sizeof(char));
 	memset(fhead->url, 0, URL_LENGTH * sizeof(char));
 	/*set the head of the frontier to be the seed URL*/
-	memcpy(fhead->url, argv[argc-1], strlen(argv[argc-1]) * sizeof(char));
+	//memcpy(fhead->url, argv[argc-1], strlen(argv[argc-1]) * sizeof(char));
+	strcpy(fhead->url, argv[argc-1]);
 	fhead->next = NULL;
 	frontier_node* ftail = fhead;
 	/*init glib hash table for visited URLS*/
@@ -282,10 +281,9 @@ int main(int argc, char** argv) {
 
 	frontier_node* fstepper = p_in->fhead;
 	while (fstepper != NULL) {
-
 		frontier_node* tmp = fstepper;
 		fstepper = fstepper->next;
-		free(tmp->url);
+		if (tmp->url != NULL) free(tmp->url);
 		free(tmp);
 	}
 
@@ -295,7 +293,7 @@ int main(int argc, char** argv) {
 	while (pstepper != NULL) {
 		png_node* tmp = pstepper;
 		pstepper = pstepper->next;
-		free(tmp->url);
+		if (tmp->url != NULL) free(tmp->url);
 		free(tmp);
 	}
 

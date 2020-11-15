@@ -68,7 +68,7 @@ htmlDocPtr mem_getdoc(char *buf, int size, const char *url)
     htmlDocPtr doc = htmlReadMemory(buf, size, url, NULL, opts);
 
     if ( doc == NULL ) {
-        fprintf(stderr, "Document not parsed successfully.\n");
+        //fprintf(stderr, "Document not parsed successfully.\n");
         return NULL;
     }
     return doc;
@@ -133,7 +133,7 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
 		/*---add URL to the frontier*/
 		frontier_node* new_node = malloc(sizeof(frontier_node));
 		new_node->url = calloc(1, URL_LENGTH * sizeof(char));
-		memcpy(new_node->url, (char*)href, strlen((char*)href) * sizeof(char));
+		strcpy(new_node->url, (const char*)href);
 		new_node->next = NULL;
 
 		pthread_mutex_lock(p_in->mut_frontier);
@@ -399,10 +399,9 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 			&& (unsigned char)p_recv_buf->buf[6] == 0x1a && (unsigned char)p_recv_buf->buf[7] == 0x0a) {
 
 			/*---add PNG url to the PNG Linked List*/
-			puts("enter png");
 			png_node* new_node = malloc(sizeof(png_node));
 			new_node->url = calloc(1, URL_LENGTH * sizeof(char));
-			memcpy(new_node->url, eurl, strlen(eurl) * sizeof(char));
+			strcpy(new_node->url, eurl);
 
 			if (*p_in->pngs_collected < p_in->target) {
 				pthread_mutex_lock(p_in->mut_pngs);
@@ -448,7 +447,7 @@ int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
     }
 
     if ( response_code >= 400 ) {
-	fprintf(stderr, "Error.\n");
+	//fprintf(stderr, "Error.\n");
         return 1;
     }
 
