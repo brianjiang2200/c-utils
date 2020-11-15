@@ -41,6 +41,8 @@
 #include "curl_xml.h"
 #include "findpng2.h"
 
+#include <search.h>
+
 #define SEED_URL "http://ece252-1.uwaterloo.ca/lab4/"
 #define ECE252_HEADER "X-Ece252-Fragment: "
 #define BUF_SIZE 1048576  /* 1024*1024 = 1M */
@@ -113,6 +115,8 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
         return 1;
     }
 
+    ENTRY e, *ep;
+
     doc = mem_getdoc(buf, size, base_url);
     result = getnodeset (doc, xpath);
     if (result) {
@@ -127,6 +131,24 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
                 /*printf("href: %s\n", href);*/
 		/*---add URL to the frontier*/
+/*
+//ADDED
+		e.key = (char*)href;
+		e.data = (char*)href;
+
+		//Search VISITED hash table
+		pthread_rwlock_wrlock(p_in->rw_hash);
+		ep = hsearch(e, FIND);
+		//if already in visited, move forward to next URL in frontier
+		if (ep != NULL) {       //represents successful search
+			pthread_rwlock_unlock(p_in->rw_hash);
+			continue;
+		}
+		//Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there
+		ep = hsearch(e, ENTER);
+		pthread_rwlock_unlock(p_in->rw_hash);
+//
+*/
 		frontier_node* new_node = malloc(sizeof(frontier_node));
 		new_node->url = malloc(URL_LENGTH * sizeof(char));
 		memset(new_node->url, 0, URL_LENGTH * sizeof(char));
