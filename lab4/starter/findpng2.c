@@ -80,10 +80,9 @@ void* work(void* arg) {
 
 		//Search VISITED hash table
 		pthread_rwlock_rdlock(p_in->rw_hash);
-		ep = hsearch(e, FIND);
+		hsearch_r(e, FIND, &ep, p_in->visited);
 		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
-//			free(e.key);
 			pthread_rwlock_unlock(p_in->rw_hash);
 			continue;
 		}
@@ -91,7 +90,7 @@ void* work(void* arg) {
 
 		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
 		pthread_rwlock_wrlock(p_in->rw_hash);
-		ep = hsearch(e, ENTER);
+		hsearch_r(e, ENTER, &ep, p_in->visited);
 		pthread_rwlock_unlock(p_in->rw_hash);
 
 		/*print the URL to log file*/
@@ -119,7 +118,6 @@ void* work(void* arg) {
 		if (res != CURLE_OK) {
 			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
 			cleanup(curl_handle, &recv_buf);
-//			free(e.key);
 			/*keep trying*/
 			continue;
 		}
@@ -130,14 +128,6 @@ void* work(void* arg) {
 //		free(e.key);
 
 		cleanup(curl_handle, &recv_buf);
-
-		if (contWork) {
-			pthread_mutex_lock(p_in->mut_pngs);
-			if (*p_in->pngs_collected >= p_in->target) {
-				contWork = 0;
-			}
-			pthread_mutex_unlock(p_in->mut_pngs);
-		}
 
 	}
 
@@ -200,7 +190,10 @@ int main(int argc, char** argv) {
 	fhead->next = NULL;
 	frontier_node* ftail = fhead;
 	/*init glib hash table for visited URLS*/
-	hcreate(20 * num_urls);
+	struct hsearch_data *visited = calloc(1, sizeof(struct hsearch_data));
+	if (hcreate_r(20 * num_urls, visited) == 0) {
+		return -2;
+	}
 	/*init PNG result list*/
 	png_node* phead = NULL;
 	int pngs_collected = 0;
@@ -226,6 +219,7 @@ int main(int argc, char** argv) {
 	p_in->fhead = fhead;
 	p_in->ftail = ftail;
 	p_in->phead = phead;
+	p_in->visited = visited;
 	p_in->pngs_collected = &pngs_collected;
 	p_in->blocked_threads = &blocked_threads;
 	p_in->target = num_urls;
@@ -309,7 +303,7 @@ int main(int argc, char** argv) {
 	free(threads);
 
 	/*clean up visited hash table*/
-	hdestroy();
+	hdestroy_r(visited);
 
 	return 0;
 }
