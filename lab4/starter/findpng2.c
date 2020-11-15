@@ -81,7 +81,7 @@ void* work(void* arg) {
                 e.key = popped->url;
                 e.data = popped->url;
 		/*free popped node*/
-//free		free(popped);
+		free(popped);
 
 		//Search VISITED hash table
 		pthread_rwlock_rdlock(p_in->rw_hash);
@@ -90,7 +90,9 @@ void* work(void* arg) {
 		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
 			pthread_rwlock_unlock(p_in->rw_hash);
-
+			//free(e.key);
+			//e.key = NULL;
+			//e.data = NULL;
 			continue;
 		}
 		pthread_rwlock_unlock(p_in->rw_hash);
@@ -125,16 +127,19 @@ void* work(void* arg) {
 		if (res != CURLE_OK) {
 			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
 			cleanup(curl_handle, &recv_buf);
+			//free(e.key);
+			//e.key = NULL;
+			//e.data = NULL;
 			/*keep trying*/
 			continue;
 		}
 		/*data processing handled externally (process_data => html/png)*/
 		process_data(curl_handle, &recv_buf, arg);
 
-		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY AND E.DATA!!*/
-//free		free(e.key);
-
 		cleanup(curl_handle, &recv_buf);
+		//free(e.key);
+		//e.key = NULL;
+		//e.data = NULL;
 
 		pthread_mutex_lock(p_in->mut_pngs);
                 if (*p_in->pngs_collected >= p_in->target) {
@@ -206,7 +211,7 @@ int main(int argc, char** argv) {
 	frontier_node* ftail = fhead;
 	/*init glib hash table for visited URLS*/
 	struct hsearch_data *visited = calloc(1, sizeof(struct hsearch_data));
-	if (hcreate_r(20 * num_urls, visited) == 0) {
+	if (hcreate_r(40 * num_urls, visited) == 0) {
 		return -2;
 	}
 	/*init PNG result list*/
@@ -315,6 +320,7 @@ int main(int argc, char** argv) {
 
 	/*clean up visited hash table*/
 	hdestroy_r(visited);
+	free(visited);
 
 	return 0;
 }
