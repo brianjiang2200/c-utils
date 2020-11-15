@@ -33,6 +33,9 @@ m30t1: findpng2
 m10t5: findpng2
 	./findpng2 -m 10 -t 5 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
+vm10t5: findpng2
+	valgrind --tool=helgrind ./findpng2 -m 10 -t 5 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
+
 m10t15: findpng2
 	./findpng2 -m 10 -t 15 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
@@ -41,6 +44,9 @@ m30t5: findpng2
 
 m30t10: findpng2
 	./findpng2 -m 30 -t 10 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
+
+vm30t10: findpng2
+	valgrind --tool=helgrind ./findpng2 -m 30 -t 10 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
 m50t5: findpng2
 	./findpng2 -m 50 -t 5 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4

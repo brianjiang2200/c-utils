@@ -90,9 +90,7 @@ void* work(void* arg) {
 		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
 			pthread_rwlock_unlock(p_in->rw_hash);
-			//free(e.key);
-			//e.key = NULL;
-			//e.data = NULL;
+			free(e.key);
 			continue;
 		}
 		pthread_rwlock_unlock(p_in->rw_hash);
@@ -109,7 +107,7 @@ void* work(void* arg) {
 
 			FILE *fp = fopen(p_in->logfile, "a");
 			if (fp != NULL) {
-				fwrite(e.key, strlen(e.key), 1, fp);
+				fwrite(ep->key, strlen(ep->key), 1, fp);
 				fwrite("\n", 1, 1, fp);
 			}
 			fclose(fp);
@@ -127,9 +125,6 @@ void* work(void* arg) {
 		if (res != CURLE_OK) {
 			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
 			cleanup(curl_handle, &recv_buf);
-			//free(e.key);
-			//e.key = NULL;
-			//e.data = NULL;
 			/*keep trying*/
 			continue;
 		}
