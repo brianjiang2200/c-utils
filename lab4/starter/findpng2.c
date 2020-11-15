@@ -68,15 +68,13 @@ void* work(void* arg) {
 		/*maintain linked list consistent state and help to terminate loop when nothing left*/
                 if (p_in->fhead == NULL) p_in->ftail = NULL;
 
-//		pthread_mutex_unlock(p_in->mut_frontier);			/*THREAD UNLOCK*/
+		pthread_mutex_unlock(p_in->mut_frontier);			/*THREAD UNLOCK*/
 
 		/*save value of phead, to be popped*/
                 e.key = popped->url;
                 e.data = popped->url;
                 /*free popped node*/
-//		free(popped);
-
-		pthread_mutex_unlock(p_in->mut_frontier);
+		free(popped);
 
 		//Search VISITED hash table
 		pthread_rwlock_rdlock(p_in->rw_hash);
@@ -109,7 +107,7 @@ void* work(void* arg) {
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, e.key);
 //TEST
-//		printf("	GRABBING URL:	%s\n", e.key);
+//		printf("GRABBING URL:	%s\n", e.key);
 //
 		if (curl_handle == NULL) {
 			abort();
@@ -130,13 +128,17 @@ void* work(void* arg) {
 		cleanup(curl_handle, &recv_buf);
 
 	}
-
+//TEST
+	puts("A");
+//
 	/*Once while finished exit other thread, since PNG limit reached*/
 	pthread_mutex_lock(p_in->mut_frontier);
 	*p_in->blocked_threads = p_in->num_threads;
 	pthread_cond_broadcast(p_in->sig_frontier);
 	pthread_mutex_unlock(p_in->mut_frontier);
-
+//TEST
+	puts("B");
+//
 	return NULL;
 }
 
