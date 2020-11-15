@@ -39,7 +39,6 @@ void* work(void* arg) {
 
 		pthread_mutex_lock(p_in->mut_pngs);
 		if (*p_in->pngs_collected >= p_in->target) {
-			//puts("breaking out of loop");
 			pthread_mutex_unlock(p_in->mut_pngs);
 			break;
 		}
@@ -49,11 +48,10 @@ void* work(void* arg) {
 
 		/*check if empty frontier first*/
 		if (p_in->fhead == NULL) {
-			//p_in->blocked_threads = __sync_add_and_fetch(p_in->blocked_threads, 1);
-			*p_in->blocked_threads = *p_in->blocked_threads + 1;
+			(*(p_in->blocked_threads))++;
 			if (*p_in->blocked_threads < p_in->num_threads) {
 				/*wait and unblock frontier*/
-				//puts("waiting...");
+				puts("waiting...");
 				pthread_cond_wait(p_in->sig_frontier, p_in->mut_frontier);
 				//puts("escaped wait");
 			}
@@ -64,11 +62,13 @@ void* work(void* arg) {
 				break;
 			}
 			/*decrement blocked threads counter when leaving this area*/
-			//p_in->blocked_threads = __sync_add_and_fetch(p_in->blocked_threads, -1);
-			*p_in->blocked_threads = *p_in->blocked_threads - 1;
-			//printf("Blocked threads: %d\n", *p_in->blocked_threads);
+			(*(p_in->blocked_threads))--;
+			printf("Blocked threads: %d\n", *p_in->blocked_threads);
 		}
 
+		if (p_in->fhead == NULL) {
+			puts("fhead empty");
+		}
 		/*pop the next element in frontier*/
 		frontier_node* popped = p_in->fhead;
 		p_in->fhead = p_in->fhead->next;
@@ -77,12 +77,10 @@ void* work(void* arg) {
 
 		pthread_mutex_unlock(p_in->mut_frontier);			/*THREAD UNLOCK*/
 
-		//puts("released frontier mutex");
 		/*save value of phead, to be popped*/
                 e.key = popped->url;
                 e.data = popped->url;
                 /*free popped node*/
-//		free(popped);
 
 		//Search VISITED hash table
 		pthread_rwlock_rdlock(p_in->rw_hash);
@@ -135,6 +133,7 @@ void* work(void* arg) {
 		}
 		/*data processing handled externally (process_data => html/png)*/
 		process_data(curl_handle, &recv_buf, arg);
+		puts("FINISHED DATA PROCESSING");
 
 		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY AND E.DATA!!*/
 //		free(e.key);
@@ -153,7 +152,6 @@ void* work(void* arg) {
 
 	/*Once while finished exit other thread, since PNG limit reached*/
 	pthread_mutex_lock(p_in->mut_frontier);
-	//puts("here");
 	*p_in->blocked_threads = p_in->num_threads;
 	pthread_cond_broadcast(p_in->sig_frontier);
 	pthread_mutex_unlock(p_in->mut_frontier);
@@ -254,7 +252,6 @@ int main(int argc, char** argv) {
 
 	/*curl init*/
 	curl_global_init(CURL_GLOBAL_DEFAULT);
-	printf("Blocked threads initial value: %d\n", *p_in->blocked_threads);
 
 	/*thread init*/
 	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
