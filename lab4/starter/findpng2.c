@@ -62,10 +62,6 @@ void* work(void* arg) {
 			/*decrement blocked threads counter when leaving this area*/
 			(*(p_in->blocked_threads))--;
 
-//TEST
-//			printf("Blocked threads: %d\n", *p_in->blocked_threads);
-//
-
 		}
 
 		if (p_in->fhead == NULL) {
@@ -90,49 +86,24 @@ void* work(void* arg) {
 		//Search VISITED hash table
 		pthread_rwlock_rdlock(p_in->rw_hash);
 
-//TEST
-//		puts("inside readlock");
-//
-
 		hsearch_r(e, FIND, &ep, p_in->visited);
 		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
 			pthread_rwlock_unlock(p_in->rw_hash);
 
-//TEST
-//			puts("released readlock");
-//
-
-//free			free(e.key);
 			continue;
 		}
 		pthread_rwlock_unlock(p_in->rw_hash);
 
-//TEST
-//		puts("released readlock");
-//
-
 		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
 		pthread_rwlock_wrlock(p_in->rw_hash);
-
-//TEST
-//		puts("inside writelock");
-//
 
 		hsearch_r(e, ENTER, &ep, p_in->visited);
 		pthread_rwlock_unlock(p_in->rw_hash);
 
-//TEST
-//		puts("released readlock");
-//
-
 		/*print the URL to log file*/
 		if (logging) {
 			pthread_mutex_lock(p_in->mut_log);
-
-//TEST
-//			puts("logging");
-//
 
 			FILE *fp = fopen(p_in->logfile, "a");
 			if (fp != NULL) {
@@ -147,10 +118,6 @@ void* work(void* arg) {
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, e.key);
 
-//TEST
-//		printf("GRABBING URL: %s\n", e.key);
-//
-
 		if (curl_handle == NULL) {
 			abort();
 		}
@@ -158,16 +125,11 @@ void* work(void* arg) {
 		if (res != CURLE_OK) {
 			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
 			cleanup(curl_handle, &recv_buf);
-//free			free(e.key);
 			/*keep trying*/
 			continue;
 		}
 		/*data processing handled externally (process_data => html/png)*/
 		process_data(curl_handle, &recv_buf, arg);
-
-//TEST
-//		puts("FINISHED DATA PROCESSING");
-//
 
 		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY AND E.DATA!!*/
 //free		free(e.key);
@@ -176,10 +138,6 @@ void* work(void* arg) {
 
 		pthread_mutex_lock(p_in->mut_pngs);
                 if (*p_in->pngs_collected >= p_in->target) {
-
-//TEST
-//			puts("breaking out of loop");
-//
 
 			pthread_mutex_unlock(p_in->mut_pngs);
                         break;
@@ -325,16 +283,8 @@ int main(int argc, char** argv) {
 
 	/*destroy frontier linked list*/
 
-//TEST
-//	printf("\nFRONTIER:\n");
-//
-
 	frontier_node* fstepper = p_in->fhead;
 	while (fstepper != NULL) {
-
-//TEST
-//		printf("	%s\n", fstepper->url);
-//
 
 		frontier_node* tmp = fstepper;
 		fstepper = fstepper->next;

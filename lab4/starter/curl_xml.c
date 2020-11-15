@@ -128,14 +128,11 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
             }
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
 
-//TEST
-//		printf("href: %s\n", href);
-//
+		/*printf("href: %s\n", href);*/
 
 		/*---add URL to the frontier*/
 		frontier_node* new_node = malloc(sizeof(frontier_node));
-		new_node->url = malloc(URL_LENGTH * sizeof(char));
-		memset(new_node->url, 0, URL_LENGTH * sizeof(char));
+		new_node->url = calloc(1, URL_LENGTH * sizeof(char));
 		memcpy(new_node->url, (char*)href, strlen((char*)href) * sizeof(char));
 		new_node->next = NULL;
 
