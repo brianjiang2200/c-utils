@@ -88,8 +88,8 @@ void* work(void* arg) {
 
 		/*if already in visited, move forward to next URL in frontier*/
                 if (ep != NULL) {       //represents successful search
-                        //free(e.key);
-                        //e.key = NULL;
+                        free(e.key);
+                        e.key = NULL;
                         continue;
                 }
 
@@ -244,6 +244,7 @@ int main(int argc, char** argv) {
 
 	/*curl init*/
 	curl_global_init(CURL_GLOBAL_DEFAULT);
+	xmlInitParser();
 
 	/*thread init*/
 	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
@@ -276,6 +277,7 @@ int main(int argc, char** argv) {
 
 	/*CLEANUP*/
 	curl_global_cleanup();
+	xmlCleanupParser();
 
 	/*destroy frontier linked list*/
 
