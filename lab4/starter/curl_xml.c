@@ -115,17 +115,21 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
         return 1;
     }
 
+	pthread_mutex_lock(p_in->mut_xml);
     doc = mem_getdoc(buf, size, base_url);
     result = getnodeset (doc, xpath);
+	pthread_mutex_unlock(p_in->mut_xml);
     if (result) {
         nodeset = result->nodesetval;
         for (i=0; i < nodeset->nodeNr; i++) {
+		pthread_mutex_lock(p_in->mut_xml);
             href = xmlNodeListGetString(doc, nodeset->nodeTab[i]->xmlChildrenNode, 1);
             if ( follow_relative_links ) {
                 xmlChar *old = href;
                 href = xmlBuildURI(href, (xmlChar *) base_url);
                 xmlFree(old);
             }
+		pthread_mutex_unlock(p_in->mut_xml);
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
 
 		/*printf("href: %s\n", href);*/
@@ -148,11 +152,17 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
 		pthread_mutex_unlock(p_in->mut_frontier);
 		/*---*/
             }
+		pthread_mutex_lock(p_in->mut_xml);
             xmlFree(href);
+		pthread_mutex_unlock(p_in->mut_xml);
         }
+	pthread_mutex_lock(p_in->mut_xml);
         xmlXPathFreeObject (result);
+	pthread_mutex_unlock(p_in->mut_xml);
     }
+	pthread_mutex_lock(p_in->mut_xml);
     xmlFreeDoc(doc);
+	pthread_mutex_unlock(p_in->mut_xml);
    /*xmlCleanupParser();*/
     return 0;
 }

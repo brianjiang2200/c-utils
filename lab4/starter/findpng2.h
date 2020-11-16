@@ -33,4 +33,5 @@ typedef struct dummmy3
 	pthread_mutex_t* mut_pngs;
 	pthread_rwlock_t* rw_hash;
 	pthread_mutex_t* mut_log;
+	pthread_mutex_t* mut_xml;
 } thread_args;

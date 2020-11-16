@@ -216,11 +216,13 @@ int main(int argc, char** argv) {
 	pthread_mutex_t mut_pngs;
 	pthread_rwlock_t rw_hash;
 	pthread_mutex_t mut_log;
+	pthread_mutex_t mut_xml;
 	if (pthread_cond_init(&sig_frontier, NULL) ||
 		pthread_mutex_init(&mut_frontier, NULL) ||
 		pthread_mutex_init(&mut_pngs, NULL) ||
 		pthread_rwlock_init(&rw_hash, NULL) ||
-		pthread_mutex_init(&mut_log, NULL)) {
+		pthread_mutex_init(&mut_log, NULL) ||
+		pthread_mutex_init(&mut_xml, NULL)) {
 			perror("concurrency controls");
 			abort();
 	}
@@ -241,6 +243,7 @@ int main(int argc, char** argv) {
 	p_in->mut_pngs = &mut_pngs;
 	p_in->rw_hash = &rw_hash;
 	p_in->mut_log = &mut_log;
+	p_in->mut_xml = &mut_xml;
 
 	/*curl init*/
 	curl_global_init(CURL_GLOBAL_DEFAULT);
