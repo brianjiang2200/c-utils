@@ -413,19 +413,19 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 			new_node->url = calloc(1, URL_LENGTH * sizeof(char));
 			strcpy(new_node->url, eurl);
 
+			pthread_mutex_lock(p_in->mut_pngs);
 			if (*p_in->pngs_collected < p_in->target) {
-				pthread_mutex_lock(p_in->mut_pngs);
 				new_node->next = p_in->phead;
 				p_in->phead = new_node;
 				(*(p_in->pngs_collected))++;
 
 				printf("PNG COUNT: %d\n", *p_in->pngs_collected);
 
-				pthread_mutex_unlock(p_in->mut_pngs);
 			} else {
 				free(new_node->url);
 				free(new_node);
 			}
+			pthread_mutex_unlock(p_in->mut_pngs);
 
 			/*---*/
 		}
