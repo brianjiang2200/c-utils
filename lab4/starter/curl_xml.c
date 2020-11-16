@@ -41,8 +41,6 @@
 #include "curl_xml.h"
 #include "findpng2.h"
 
-#include <search.h>
-
 #define SEED_URL "http://ece252-1.uwaterloo.ca/lab4/"
 #define ECE252_HEADER "X-Ece252-Fragment: "
 #define BUF_SIZE 1048576  /* 1024*1024 = 1M */

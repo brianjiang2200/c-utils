@@ -82,20 +82,17 @@ void* work(void* arg) {
                 e.data = NULL;
 
 		//Search VISITED hash table
-		pthread_rwlock_rdlock(p_in->rw_hash);
+		pthread_rwlock_wrlock(p_in->rw_hash);
 		hsearch_r(e, FIND, &ep, p_in->visited);
-		pthread_rwlock_unlock(p_in->rw_hash);
 
 		/*if already in visited, move forward to next URL in frontier*/
                 if (ep != NULL) {       //represents successful search
+			pthread_rwlock_unlock(p_in->rw_hash);
                         free(e.key);
                         e.key = NULL;
                         continue;
                 }
-
 		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
-		pthread_rwlock_wrlock(p_in->rw_hash);
-
 		hsearch_r(e, ENTER, &ep, p_in->visited);
 		pthread_rwlock_unlock(p_in->rw_hash);
 
