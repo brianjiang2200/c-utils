@@ -251,6 +251,8 @@ int main(int argc, char** argv) {
 
 	/*thread init*/
 	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
+	/*remove old logfile.txt if it exists*/
+	remove(logfile);
 
 	/*thread create*/
 	for (int i = 0; i < no_threads; ++i) {
