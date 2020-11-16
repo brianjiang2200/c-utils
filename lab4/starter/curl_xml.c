@@ -417,7 +417,7 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 				p_in->phead = new_node;
 				(*(p_in->pngs_collected))++;
 
-				printf("PNG COUNT: %d\n", *p_in->pngs_collected);
+//TEST				printf("PNG COUNT: %d\n", *p_in->pngs_collected);
 
 			} else {
 				free(new_node->url);
