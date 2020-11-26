@@ -22,16 +22,7 @@ typedef struct dummmy3
 	frontier_node* fhead;
 	frontier_node* ftail;
 	png_node* phead;
-	struct hsearch_data* visited;
 	int* pngs_collected;
-	int* blocked_threads;
 	int target;
-	int num_threads;
 	char* logfile;
-	pthread_cond_t* sig_frontier;
-	pthread_mutex_t* mut_frontier;
-	pthread_mutex_t* mut_pngs;
-	pthread_rwlock_t* rw_hash;
-	pthread_mutex_t* mut_log;
-	pthread_mutex_t* mut_xml;
 } thread_args;
