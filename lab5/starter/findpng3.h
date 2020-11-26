@@ -22,7 +22,9 @@ typedef struct dummmy3
 	frontier_node* fhead;
 	frontier_node* ftail;
 	png_node* phead;
+	struct hsearch_data* visited;
 	int* pngs_collected;
 	int target;
+	int max_connections;
 	char* logfile;
-} thread_args;
+} work_args;

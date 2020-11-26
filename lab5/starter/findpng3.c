@@ -26,9 +26,9 @@
 
 int logging = 0;
 
-/*work to be performed by threads*/
-void* work(void* arg) {
-	thread_args *p_in = arg;
+/*work to be performed*/
+int work(void* arg) {
+	work_args *p_in = arg;
 	ENTRY e, *ep;
 	CURL *curl_handle;
 	CURLcode res;
@@ -46,10 +46,6 @@ void* work(void* arg) {
 		if (p_in->fhead == NULL) p_in->ftail = NULL;
 		/*free popped node*/
 		free(popped);
-
-//TEST
-//		printf("TRYING TO GRAB URL:	%s\n", e.key);
-//
 
 		//Search VISITED hash table
 		ep = hsearch(e, FIND);
@@ -76,10 +72,6 @@ void* work(void* arg) {
         	RECV_BUF recv_buf;
 		curl_handle = easy_handle_init(&recv_buf, e.key);
 
-//TEST
-//		printf("	GRABBING URL:	%s\n", e.key);
-//
-
 		if (curl_handle == NULL) {
 			abort();
 		}
@@ -99,7 +91,7 @@ void* work(void* arg) {
 
 	}
 
-	return NULL;
+	return 0;
 }
 
 int main(int argc, char** argv) {
@@ -119,7 +111,7 @@ int main(int argc, char** argv) {
 	times[0] = (tv.tv_sec) + tv.tv_usec/1000000.;
 
 	/*arguments*/
-	int no_threads = 1;
+	int max_connections = 10;
 	int num_urls = 50;
 	char logfile[64];
 	memset(logfile, 0, 64);
@@ -129,7 +121,7 @@ int main(int argc, char** argv) {
 	while ((c = getopt(argc, argv, "t:m:v:")) != -1) {
 		switch(c) {
 		case 't':
-			no_threads = strtoul(optarg, NULL, 10);
+			max_connections = strtoul(optarg, NULL, 10);
 			break;
 		case 'm':
 			num_urls = strtoul(optarg, NULL, 10);
@@ -143,42 +135,34 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	/*thread init*/
-	pthread_t* threads = malloc(no_threads * sizeof(pthread_t));
 	/*init URL frontier*/
 	frontier_node* fhead = malloc(sizeof(frontier_node));
-	fhead->url = malloc(URL_LENGTH * sizeof(char));
-	memset(fhead->url, 0, URL_LENGTH * sizeof(char));
+	fhead->url = calloc(1, URL_LENGTH * sizeof(char));
 	/*set the head of the frontier to be the seed URL*/
-	memcpy(fhead->url, argv[argc-1], strlen(argv[argc-1]) * sizeof(char));
+	strcpy(fhead->url, argv[argc - 1]);
 	fhead->next = NULL;
 	frontier_node* ftail = fhead;
 	/*init glib hash table for visited URLS*/
-	hcreate(20 * num_urls);
+	struct hsearch_data *visited = calloc(1, sizeof(struct hsearch_data));
+	if (hcreate_r(40 * num_urls, visited) == 0) {
+		return -2;
+	}
 	/*init PNG result list*/
 	png_node* phead = NULL;
 	int pngs_collected = 0;
 
-//SINGLE-THREADED
-	thread_args *p_in = malloc(sizeof(thread_args));
+	work_args *p_in = malloc(sizeof(work_args));
 	p_in->fhead = fhead;
 	p_in->ftail = ftail;
 	p_in->phead = phead;
+	p_in->visited = visited;
 	p_in->pngs_collected = &pngs_collected;
 	p_in->target = num_urls;
+	p_in->max_connections = max_connections;
 	p_in->logfile = logfile;
-//
-
-/*MULTI-THREADED
-*/
 
 	/*curl init*/
-	curl_global_init(CURL_GLOBAL_DEFAULT);
-
-	/*thread create*/
-        pthread_create(threads, NULL, work, p_in);
-
-	pthread_join(threads[0], NULL);
+	curl_global_init(CURL_GLOBAL_ALL);
 
 	/*Print PNG URLs to png.urls.txt, this will create an empty file even if nothing to print*/
 	FILE* fp_pngs;
@@ -202,7 +186,6 @@ int main(int argc, char** argv) {
 	curl_global_cleanup();
 
 	/*destroy frontier linked list*/
-
 	frontier_node* fstepper = p_in->fhead;
 	while (fstepper != NULL) {
 		frontier_node* tmp = fstepper;
@@ -212,7 +195,6 @@ int main(int argc, char** argv) {
 	}
 
 	/*destroy png linked list*/
-
 	png_node* pstepper = p_in->phead;
 	while (pstepper != NULL) {
 		png_node* tmp = pstepper;
@@ -221,9 +203,8 @@ int main(int argc, char** argv) {
 		free(tmp);
 	}
 
-	/*cleanup thread*/
+	/*cleanup work arguments*/
 	free(p_in);
-	free(threads);
 
 	/*clean up visited hash table*/
 	hdestroy();

@@ -19,7 +19,7 @@ TARGETS= findpng3
 all: ${TARGETS}
 
 findpng3: $(HEADERS) $(SRCS)
-	$(LD) -o findpng3 $(SRCS) -pthread $(CFLAGS) $(LDLIBS) $(LDFLAGS)
+	$(LD) -o findpng3 $(SRCS) $(CFLAGS) $(LDLIBS) $(LDFLAGS)
 
 clean:
 	rm -f *~ *.d *.o *.gch $(TARGETS) *.png *.html *.txt output*

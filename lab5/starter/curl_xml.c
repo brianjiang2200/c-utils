@@ -98,7 +98,7 @@ xmlXPathObjectPtr getnodeset (xmlDocPtr doc, xmlChar *xpath)
 int find_http(char *buf, int size, int follow_relative_links, const char *base_url, void* arg)
 {
 	/*---*/
-	thread_args* p_in = arg;
+	work_args* p_in = arg;
 	/*---*/
 
     int i;
@@ -124,7 +124,6 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
                 xmlFree(old);
             }
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
-                /*printf("href: %s\n", href);*/
 		/*---add URL to the frontier*/
 		frontier_node* new_node = malloc(sizeof(frontier_node));
 		new_node->url = malloc(URL_LENGTH * sizeof(char));
@@ -374,9 +373,7 @@ int process_html(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 
 int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 {
-	/*---*/
-	thread_args *p_in = arg;
-	/*---*/
+	work_args *p_in = arg;
 
 	/*pid_t pid = getpid();
 	char fname[256];*/
@@ -399,15 +396,7 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 			p_in->phead = new_node;
 			*p_in->pngs_collected = __sync_add_and_fetch(p_in->pngs_collected, 1);
 
-//TEST
-			printf("		PNG COUNT: %d\n", *p_in->pngs_collected);
-//
-
-			/*---*/
 		}
-
-	/*NEXT STEP: DELETE PNG URL FROM FRONTIER*/
-	/*---*/
 
 	}
 
