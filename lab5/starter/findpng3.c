@@ -16,7 +16,7 @@
 #include <search.h>
 #include <fcntl.h>
 #include "curl_xml.h"
-#include "findpng2.h"
+#include "findpng3.h"
 
 #define CT_PNG "image/png"
 #define CT_HTML "text/html"
@@ -48,7 +48,7 @@ void* work(void* arg) {
 		free(popped);
 
 //TEST
-		printf("TRYING TO GRAB URL:	%s\n", e.key);
+//		printf("TRYING TO GRAB URL:	%s\n", e.key);
 //
 
 		//Search VISITED hash table
@@ -67,7 +67,9 @@ void* work(void* arg) {
 			FILE *fp = fopen(p_in->logfile, "a");
 			if (fp != NULL) {
 				fwrite(e.key, strlen(e.key), 1, fp);
+				fwrite("\n", 1, 1, fp);
 			}
+			fclose(fp);
 		}
 
 		/*CURL the popped URL*/
@@ -75,7 +77,7 @@ void* work(void* arg) {
 		curl_handle = easy_handle_init(&recv_buf, e.key);
 
 //TEST
-		printf("	GRABBING URL:	%s\n", e.key);
+//		printf("	GRABBING URL:	%s\n", e.key);
 //
 
 		if (curl_handle == NULL) {

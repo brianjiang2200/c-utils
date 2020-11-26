@@ -38,7 +38,7 @@
 #include <libxml/xpath.h>
 #include <libxml/uri.h>
 #include "curl_xml.h"
-#include "findpng2.h"
+#include "findpng3.h"
 
 #define SEED_URL "http://ece252-1.uwaterloo.ca/lab4/"
 #define ECE252_HEADER "X-Ece252-Fragment: "

@@ -11,15 +11,15 @@ LDLIBS_XML2 = $(shell xml2-config --libs)
 LDLIBS_CURL = $(shell curl-config --libs)
 LDLIBS = $(LDLIBS_XML2) $(LDLIBS_CURL)
 
-SRCS   = curl_xml.c findpng2.c
+SRCS   = curl_xml.c findpng3.c
 HEADERS = curl_xml.h
-OBJS3  = findpng2.o
-TARGETS= findpng2
+OBJS3  = findpng3.o
+TARGETS= findpng3
 
 all: ${TARGETS}
 
-findpng2: $(HEADERS) $(SRCS)
-	$(LD) -o findpng2 $(SRCS) -pthread $(CFLAGS) $(LDLIBS) $(LDFLAGS)
+findpng3: $(HEADERS) $(SRCS)
+	$(LD) -o findpng3 $(SRCS) -pthread $(CFLAGS) $(LDLIBS) $(LDFLAGS)
 
 clean:
 	rm -f *~ *.d *.o *.gch $(TARGETS) *.png *.html *.txt output*
