@@ -32,31 +32,43 @@ int work(void* arg) {
 	ENTRY e, *ep;
 	CURL *curl_handle;
 	CURLcode res;
+	int contWork = 1;
 
-	while (p_in->fhead != NULL && *p_in->pngs_collected < p_in->target) {
+	while (contWork) {
+
+		if (*p_in->pngs_collected >= p_in->target) {
+			break;
+		}
+
+		/*check if empty frontier first*/
+		if (p_in->fhead == NULL) {
+			/*temporary measure*/
+			break;
+		}
 
 		/*pop the next element in frontier*/
 		frontier_node* popped = p_in->fhead;
+		 p_in->fhead = p_in->fhead->next;
+		if (p_in->fhead == NULL) p_in->ftail = NULL;
+                /*maintain linked list consistent state and help to terminate loop when nothing left*/
+
 		/*save value of phead, to be popped*/
 		e.key = popped->url;
-		e.data = popped->url;	//THEORY: FOR ENTER FLAG, DATA IS INSERTED INTO HASH TABLE (REPRESENTS URL)?
-		/*unlink current head node (to be popped)*/
-		p_in->fhead = p_in->fhead->next;
-		/*maintain linked list consistent state and help to terminate loop when nothing left*/
-		if (p_in->fhead == NULL) p_in->ftail = NULL;
-		/*free popped node*/
+		e.data = NULL;
 		free(popped);
 
 		//Search VISITED hash table
-		ep = hsearch(e, FIND);
+		hsearch_r(e, FIND, &ep, p_in->visited);
 
 		/*if already in visited, move forward to next URL in frontier*/
 		if (ep != NULL) {	//represents successful search
+			free(e.key);
+			e.key = NULL;
 			continue;
 		}
 
 		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
-		ep = hsearch(e, ENTER);
+		hsearch_r(e, ENTER, &ep, p_in->visited);
 
 		/*print the URL to log file*/
 		if (logging) {
@@ -163,6 +175,14 @@ int main(int argc, char** argv) {
 
 	/*curl init*/
 	curl_global_init(CURL_GLOBAL_ALL);
+
+	/*WORK IS DONE HERE*/
+	if (work(p_in) != 0) {
+		/*cleanup*/
+		free(p_in);
+		hdestroy();
+		return -1;
+	}
 
 	/*Print PNG URLs to png.urls.txt, this will create an empty file even if nothing to print*/
 	FILE* fp_pngs;
