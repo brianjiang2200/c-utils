@@ -30,5 +30,8 @@ test2: findpng3
 test3: findpng3
 	./findpng3 -t 10 -m 50 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
+test4: findpng3
+	./findpng3 -t 10 -m 60 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
+
 clean:
 	rm -f *~ *.d *.o *.gch $(TARGETS) *.png *.html *.txt output*
