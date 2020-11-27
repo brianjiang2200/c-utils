@@ -125,7 +125,6 @@ int work(void* arg) {
 				curl_easy_cleanup( curl_handle );
 			}
 		}
-		contWork = 0;		//tmp
 	}
 
 	curl_multi_cleanup(connections);
@@ -149,7 +148,7 @@ int main(int argc, char** argv) {
 	times[0] = (tv.tv_sec) + tv.tv_usec/1000000.;
 
 	/*arguments*/
-	int max_connections = 10;
+	int max_connections = 1;
 	int num_urls = 50;
 	char logfile[64];
 	memset(logfile, 0, 64);
@@ -201,6 +200,9 @@ int main(int argc, char** argv) {
 
 	/*curl init*/
 	curl_global_init(CURL_GLOBAL_ALL);
+	xmlInitParser();
+	/*remove old logfile if it exists*/
+	remove(logfile);
 
 	/*WORK IS DONE HERE*/
 	if (work(p_in) != 0) {
