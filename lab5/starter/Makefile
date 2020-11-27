@@ -22,7 +22,7 @@ findpng3: $(HEADERS) $(SRCS)
 	$(LD) -o findpng3 $(SRCS) $(CFLAGS) $(LDLIBS) $(LDFLAGS)
 
 test1: findpng3
-	./findpng3 -m 10 http://ece252-1.uwaterloo.ca/lab4
+	./findpng3 -m 10 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
 clean:
 	rm -f *~ *.d *.o *.gch $(TARGETS) *.png *.html *.txt output*

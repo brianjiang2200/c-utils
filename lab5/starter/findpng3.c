@@ -83,9 +83,7 @@ int work(void* arg) {
 				}
 				fclose(fp);
 			}
-//TEST
-			printf("ep->key: %s\n", ep->key);
-//
+
 			if ( curlm_init( connections, ep->key ) ) {
 				return -2;
 			}
@@ -109,18 +107,25 @@ int work(void* arg) {
 				curl_handle = msg->easy_handle;
 
 				int http_status = 0;
-				const char *szUrl = NULL;
+				const char* szUrl;
+				RECV_BUF *recv_buf;
 
 				curl_easy_getinfo( curl_handle, CURLINFO_RESPONSE_CODE, &http_status );
-				curl_easy_getinfo( curl_handle, CURLINFO_PRIVATE, &szUrl );
+				curl_easy_getinfo( curl_handle, CURLINFO_EFFECTIVE_URL, &szUrl );
 				if ( http_status == 200 ) {
 					printf("200 OK for %s\n", szUrl );
+				}
+
+				if ( msg->data.result == CURLE_OK ) {
+					curl_easy_getinfo( curl_handle, CURLINFO_PRIVATE, &recv_buf );
+					process_data( curl_handle, recv_buf, arg );
 				}
 
 				curl_multi_remove_handle( connections, curl_handle );
 				curl_easy_cleanup( curl_handle );
 			}
 		}
+		contWork = 0;		//tmp
 	}
 
 	curl_multi_cleanup(connections);

@@ -126,10 +126,10 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
 		/*---add URL to the frontier*/
 		frontier_node* new_node = malloc(sizeof(frontier_node));
-		new_node->url = malloc(URL_LENGTH * sizeof(char));
-		memset(new_node->url, 0, URL_LENGTH * sizeof(char));
-		memcpy(new_node->url, (char*)href, strlen((char*)href) * sizeof(char));
+		new_node->url = calloc(1, URL_LENGTH * sizeof(char));
+		strcpy(new_node->url, (const char*)href);
 		new_node->next = NULL;
+
 		if (p_in->fhead != NULL) {
 			p_in->ftail->next = new_node;
 			p_in->ftail = new_node;
@@ -389,13 +389,17 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
 
 			/*---add PNG url to the PNG Linked List*/
 			png_node* new_node = malloc(sizeof(png_node));
-			new_node->url = malloc(URL_LENGTH * sizeof(char));
-			memset(new_node->url, 0, URL_LENGTH * sizeof(char));
-			memcpy(new_node->url, eurl, strlen(eurl) * sizeof(char));
-			new_node->next = p_in->phead;
-			p_in->phead = new_node;
-			*p_in->pngs_collected = __sync_add_and_fetch(p_in->pngs_collected, 1);
+			new_node->url = calloc(1, URL_LENGTH * sizeof(char));
+			strcpy(new_node->url, eurl);
 
+			if ( *p_in->pngs_collected < p_in->target ) {
+				new_node->next = p_in->phead;
+				p_in->phead = new_node;
+				(*(p_in->pngs_collected))++;
+			} else {
+				free(new_node->url);
+				free(new_node);
+			}
 		}
 
 	}
