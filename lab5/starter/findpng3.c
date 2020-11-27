@@ -11,8 +11,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <curl/curl.h>
-#include <pthread.h>
-#include <semaphore.h>
 #include <search.h>
 #include <fcntl.h>
 #include "curl_xml.h"
@@ -23,6 +21,7 @@
 #define CT_PNG_LEN 9
 #define CT_HTML_LEN 9
 #define URL_LENGTH 256
+#define MAX_WAIT_MSECS 30*1000
 
 int logging = 0;
 
@@ -31,9 +30,8 @@ int work(void* arg) {
 	work_args *p_in = arg;
 	ENTRY e, *ep;
 	CURL *curl_handle;
-	int res;
 	int contWork = 1;
-	int still_running = 1;
+	int still_running = 0;
 	int msgs_left = 0;
 
 	CURLM *connections = curl_multi_init();
@@ -41,71 +39,95 @@ int work(void* arg) {
 
 	while (contWork) {
 
-		if (*p_in->pngs_collected >= p_in->target) {
-			break;
-		}
-
+		if (*p_in->pngs_collected >= p_in->target) break;
 		/*check if empty frontier first*/
 		if (p_in->fhead == NULL) {
 			/*temporary measure*/
 			break;
 		}
 
-		/*pop the next element in frontier*/
-		frontier_node* popped = p_in->fhead;
-		 p_in->fhead = p_in->fhead->next;
-		if (p_in->fhead == NULL) p_in->ftail = NULL;
-                /*maintain linked list consistent state and help to terminate loop when nothing left*/
+		puts("1");
+		int loaded_connections = 0;
+		/*add up to max_connections to the multi_handle here*/
+		while (p_in->fhead != NULL && loaded_connections < p_in->max_connections) {
+			/*pop the next element in frontier*/
+			frontier_node* popped = p_in->fhead;
+		 	p_in->fhead = p_in->fhead->next;
+			if (p_in->fhead == NULL) p_in->ftail = NULL;
+                	/*maintain linked list consistent state and help to terminate loop when nothing left*/
 
-		/*save value of phead, to be popped*/
-		e.key = popped->url;
-		e.data = NULL;
-		free(popped);
+			/*save value of fhead, to be popped*/
+			e.key = popped->url;
+			e.data = NULL;
+			puts("2");
 
-		//Search VISITED hash table
-		hsearch_r(e, FIND, &ep, p_in->visited);
+			//Search VISITED hash table
+			hsearch_r(e, FIND, &ep, p_in->visited);
 
-		/*if already in visited, move forward to next URL in frontier*/
-		if (ep != NULL) {	//represents successful search
-			free(e.key);
-			e.key = NULL;
-			continue;
-		}
-
-		/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
-		hsearch_r(e, ENTER, &ep, p_in->visited);
-
-		/*print the URL to log file*/
-		if (logging) {
-			FILE *fp = fopen(p_in->logfile, "a");
-			if (fp != NULL) {
-				fwrite(e.key, strlen(e.key), 1, fp);
-				fwrite("\n", 1, 1, fp);
+			/*if already in visited, move forward to next URL in frontier*/
+			if (ep != NULL) {	//represents successful search
+				free(e.key);
+				e.key = NULL;
+				continue;
 			}
-			fclose(fp);
+
+			/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
+			hsearch_r(e, ENTER, &ep, p_in->visited);
+			puts("3");
+
+			/*print the URL to log file*/
+			if (logging) {
+				FILE *fp = fopen(p_in->logfile, "a");
+				if (fp != NULL) {
+					fwrite(e.key, strlen(ep->key), 1, fp);
+					fwrite("\n", 1, 1, fp);
+				}
+				fclose(fp);
+			}
+
+			/*setup for cURL*/
+			RECV_BUF recv_buf;
+			CURL *curl_inst = easy_handle_init( &recv_buf, ep->key );
+			if ( curl_inst == NULL ) {
+				return -2;
+			}
+			curl_easy_setopt( curl_handle, CURLOPT_PRIVATE, &recv_buf );
+			curl_multi_add_handle( connections, curl_inst );
+			loaded_connections++;
+			puts("4");
 		}
 
-		/*CURL the popped URL*/
-        	RECV_BUF recv_buf;
-		curl_handle = easy_handle_init(&recv_buf, e.key);
+		puts("5");
+		/*now dispatch the connections*/
+		curl_multi_perform( connections, &still_running );
+		puts("6");
+		do {
+			int numfds = 0;
+			int res = curl_multi_wait( connections, NULL, 0, MAX_WAIT_MSECS, &numfds );
+			if ( res != CURLM_OK ) {
+				abort();
+			}
+			curl_multi_perform( connections, &still_running );
+		} while( still_running );
+		puts("7");
 
-		if (curl_handle == NULL) {
-			abort();
+		while ( ( msg = curl_multi_info_read( connections, &msgs_left ) ) ) {
+			if ( msg->msg == CURLMSG_DONE ) {
+				curl_handle = msg->easy_handle;
+
+				int http_status = 0;
+				const char *szUrl = NULL;
+
+				curl_easy_getinfo( curl_handle, CURLINFO_RESPONSE_CODE, &http_status );
+				curl_easy_getinfo( curl_handle, CURLINFO_PRIVATE, &szUrl );
+				if ( http_status == 200 ) {
+					printf("200 OK for %s\n", szUrl );
+				}
+
+				curl_multi_remove_handle( connections, curl_handle );
+				curl_easy_cleanup( curl_handle );
+			}
 		}
-		res = curl_easy_perform(curl_handle);
-		if (res != CURLE_OK) {
-			printf("curl_easy_perform() failed: %s \n", curl_easy_strerror(res));
-			cleanup(curl_handle, &recv_buf);
-
-			/*keep trying*/
-			continue;
-		}
-		/*data processing handled externally (process_data => html/png)*/
-		process_data(curl_handle, &recv_buf, arg);
-
-		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY!!*/
-		cleanup(curl_handle, &recv_buf);
-		contWork = 0;		//temporary
 	}
 
 	curl_multi_cleanup(connections);
