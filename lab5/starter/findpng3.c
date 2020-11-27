@@ -24,6 +24,7 @@
 #define MAX_WAIT_MSECS 30*1000
 
 int logging = 0;
+int curlm_init( CURLM *connections, char* url );
 
 /*work to be performed*/
 int work(void* arg) {
@@ -35,6 +36,7 @@ int work(void* arg) {
 	int msgs_left = 0;
 
 	CURLM *connections = curl_multi_init();
+	curl_multi_setopt( connections, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long)p_in->max_connections );
 	CURLMsg *msg = NULL;
 
 	while (contWork) {
@@ -46,7 +48,6 @@ int work(void* arg) {
 			break;
 		}
 
-		puts("1");
 		int loaded_connections = 0;
 		/*add up to max_connections to the multi_handle here*/
 		while (p_in->fhead != NULL && loaded_connections < p_in->max_connections) {
@@ -59,7 +60,6 @@ int work(void* arg) {
 			/*save value of fhead, to be popped*/
 			e.key = popped->url;
 			e.data = NULL;
-			puts("2");
 
 			//Search VISITED hash table
 			hsearch_r(e, FIND, &ep, p_in->visited);
@@ -73,7 +73,6 @@ int work(void* arg) {
 
 			/*Add popped URL to VISITED: ENTER flag enters the element since its not already there*/
 			hsearch_r(e, ENTER, &ep, p_in->visited);
-			puts("3");
 
 			/*print the URL to log file*/
 			if (logging) {
@@ -87,37 +86,22 @@ int work(void* arg) {
 //TEST
 			printf("ep->key: %s\n", ep->key);
 //
-			/*setup for cURL*/
-			RECV_BUF recv_buf;
-			CURL *curl_inst = easy_handle_init( &recv_buf, ep->key );
-			if ( curl_inst == NULL ) {
+			if ( curlm_init( connections, ep->key ) ) {
 				return -2;
 			}
-			curl_easy_setopt( curl_handle, CURLOPT_PRIVATE, &recv_buf );
-			curl_multi_add_handle( connections, curl_inst );
 			loaded_connections++;
-			puts("4");
-//TEST
-			printf("loaded_connections %d/%d\n", loaded_connections, p_in->max_connections);
-//
 		}
 
-		puts("5");
 		/*now dispatch the connections*/
 		curl_multi_perform( connections, &still_running );
-		puts("6");
 		do {
 			int numfds = 0;
-//			puts("7");
 			int res = curl_multi_wait( connections, NULL, 0, MAX_WAIT_MSECS, &numfds );
 			if ( res != CURLM_OK ) {
 				abort();
 			}
-//			puts("8");
 			curl_multi_perform( connections, &still_running );
-//			puts("9");
 		} while( still_running );
-		puts("10");
 
 		while ( ( msg = curl_multi_info_read( connections, &msgs_left ) ) ) {
 			if ( msg->msg == CURLMSG_DONE ) {
@@ -266,5 +250,17 @@ int main(int argc, char** argv) {
 	/*clean up visited hash table*/
 	hdestroy();
 
+	return 0;
+}
+
+int curlm_init( CURLM* connections, char* url ) {
+	/*this memory should be freed afterward*/
+	RECV_BUF *recv_buf = malloc( sizeof( RECV_BUF ) );
+	CURL *curl_handle = easy_handle_init( recv_buf, url );
+	if ( curl_handle == NULL ) {
+		return -1;
+	}
+	curl_easy_setopt( curl_handle, CURLOPT_PRIVATE, recv_buf );
+	curl_multi_add_handle( connections, curl_handle );
 	return 0;
 }
