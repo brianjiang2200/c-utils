@@ -31,8 +31,13 @@ int work(void* arg) {
 	work_args *p_in = arg;
 	ENTRY e, *ep;
 	CURL *curl_handle;
-	CURLcode res;
+	int res;
 	int contWork = 1;
+	int still_running = 1;
+	int msgs_left = 0;
+
+	CURLM *connections = curl_multi_init();
+	CURLMsg *msg = NULL;
 
 	while (contWork) {
 
@@ -100,9 +105,10 @@ int work(void* arg) {
 
 		/*MAYBE HAVE TO EVENTUALLY FREE E.KEY!!*/
 		cleanup(curl_handle, &recv_buf);
-
+		contWork = 0;		//temporary
 	}
 
+	curl_multi_cleanup(connections);
 	return 0;
 }
 
