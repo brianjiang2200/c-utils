@@ -206,9 +206,10 @@ int main(int argc, char** argv) {
 
 	/*WORK IS DONE HERE*/
 	if (work(p_in) != 0) {
-		/*cleanup*/
+		/*cleanup if failed*/
 		free(p_in);
-		hdestroy();
+		hdestroy_r(visited);
+		free(visited);
 		return -1;
 	}
 
@@ -255,7 +256,8 @@ int main(int argc, char** argv) {
 	free(p_in);
 
 	/*clean up visited hash table*/
-	hdestroy();
+	hdestroy_r(visited);
+	free(visited);
 
 	return 0;
 }
@@ -265,9 +267,11 @@ int curlm_init( CURLM* connections, char* url ) {
 	RECV_BUF *recv_buf = malloc( sizeof( RECV_BUF ) );
 	CURL *curl_handle = easy_handle_init( recv_buf, url );
 	if ( curl_handle == NULL ) {
+//		free(recv_buf);
 		return -1;
 	}
 	curl_easy_setopt( curl_handle, CURLOPT_PRIVATE, recv_buf );
 	curl_multi_add_handle( connections, curl_handle );
+//	free(recv_buf);
 	return 0;
 }

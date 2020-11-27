@@ -22,16 +22,16 @@ findpng3: $(HEADERS) $(SRCS)
 	$(LD) -o findpng3 $(SRCS) $(CFLAGS) $(LDLIBS) $(LDFLAGS)
 
 test1: findpng3
-	./findpng3 -m 10 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
+	valgrind --leak-check=full --show-leak-kinds=all ./findpng3 -m 10 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
 test2: findpng3
-	./findpng3 -t 5 -m 30 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
+	valgrind --leak-check=full --show-leak-kinds=all ./findpng3 -t 5 -m 30 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
 test3: findpng3
-	./findpng3 -t 10 -m 50 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
+	valgrind --leak-check=full --show-leak-kinds=all ./findpng3 -t 10 -m 50 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
 test4: findpng3
-	./findpng3 -t 10 -m 60 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
+	valgrind --leak-check=full --show-leak-kinds=all ./findpng3 -t 10 -m 60 -v logfile.txt http://ece252-1.uwaterloo.ca/lab4
 
 clean:
 	rm -f *~ *.d *.o *.gch $(TARGETS) *.png *.html *.txt output*
