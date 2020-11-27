@@ -71,7 +71,7 @@ int work(void* arg) {
 				continue;
 			}
 
-			/*Add popped URL to VISITED: hsearch with ENTER flag enters the element since its not already there*/
+			/*Add popped URL to VISITED: ENTER flag enters the element since its not already there*/
 			hsearch_r(e, ENTER, &ep, p_in->visited);
 			puts("3");
 
@@ -84,7 +84,9 @@ int work(void* arg) {
 				}
 				fclose(fp);
 			}
-
+//TEST
+			printf("ep->key: %s\n", ep->key);
+//
 			/*setup for cURL*/
 			RECV_BUF recv_buf;
 			CURL *curl_inst = easy_handle_init( &recv_buf, ep->key );
@@ -95,6 +97,9 @@ int work(void* arg) {
 			curl_multi_add_handle( connections, curl_inst );
 			loaded_connections++;
 			puts("4");
+//TEST
+			printf("loaded_connections %d/%d\n", loaded_connections, p_in->max_connections);
+//
 		}
 
 		puts("5");
@@ -103,16 +108,20 @@ int work(void* arg) {
 		puts("6");
 		do {
 			int numfds = 0;
+//			puts("7");
 			int res = curl_multi_wait( connections, NULL, 0, MAX_WAIT_MSECS, &numfds );
 			if ( res != CURLM_OK ) {
 				abort();
 			}
+//			puts("8");
 			curl_multi_perform( connections, &still_running );
+//			puts("9");
 		} while( still_running );
-		puts("7");
+		puts("10");
 
 		while ( ( msg = curl_multi_info_read( connections, &msgs_left ) ) ) {
 			if ( msg->msg == CURLMSG_DONE ) {
+				/*retrieve the data*/
 				curl_handle = msg->easy_handle;
 
 				int http_status = 0;
