@@ -60,6 +60,7 @@ int work(void* arg) {
 			/*save value of fhead, to be popped*/
 			e.key = popped->url;
 			e.data = NULL;
+			free(popped);
 
 			//Search VISITED hash table
 			hsearch_r(e, FIND, &ep, p_in->visited);
@@ -106,15 +107,15 @@ int work(void* arg) {
 				/*retrieve the data*/
 				curl_handle = msg->easy_handle;
 
-				int http_status = 0;
-				const char* szUrl;
+				/*int http_status = 0;
+				const char* szUrl;*/
 				RECV_BUF *recv_buf;
 
-				curl_easy_getinfo( curl_handle, CURLINFO_RESPONSE_CODE, &http_status );
+				/*curl_easy_getinfo( curl_handle, CURLINFO_RESPONSE_CODE, &http_status );
 				curl_easy_getinfo( curl_handle, CURLINFO_EFFECTIVE_URL, &szUrl );
 				if ( http_status == 200 ) {
 					printf("200 OK for %s\n", szUrl );
-				}
+				}*/
 
 				if ( msg->data.result == CURLE_OK ) {
 					curl_easy_getinfo( curl_handle, CURLINFO_PRIVATE, &recv_buf );

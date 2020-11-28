@@ -65,7 +65,7 @@ htmlDocPtr mem_getdoc(char *buf, int size, const char *url)
     htmlDocPtr doc = htmlReadMemory(buf, size, url, NULL, opts);
 
     if ( doc == NULL ) {
-        fprintf(stderr, "Document not parsed successfully.\n");
+        /*fprintf(stderr, "Document not parsed successfully.\n");*/
         return NULL;
     }
     return doc;
@@ -429,7 +429,7 @@ int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf, void* arg)
     }
 
     if ( response_code >= 400 ) {
-	fprintf(stderr, "Error.\n");
+	/*fprintf(stderr, "Error.\n");*/
         return 1;
     }
 
